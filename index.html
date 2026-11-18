@@ -1,0 +1,2661 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>ASCII Christmas Tree</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #05080f;
+    --gold: #ffc45a;
+    --text: #d6deee;
+    --dim: #6c7791;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: radial-gradient(1200px 820px at 50% 28%, #0c1626 0%, #060a13 55%, #02040a 100%);
+    color: var(--text);
+    font-family: Consolas, Menlo, "DejaVu Sans Mono", "Courier New", monospace;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  #stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 12px;
+  }
+  #tree {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: min(96vw, 792px);
+    max-height: 94vh;
+    border-radius: 12px;
+    background: var(--bg);
+    box-shadow:
+      0 0 0 1px rgba(120, 140, 180, 0.14),
+      0 40px 110px -30px rgba(0, 0, 0, 0.92),
+      0 0 140px -55px rgba(255, 196, 90, 0.35);
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    z-index: 2;
+    background: radial-gradient(620px 520px at 50% 44%, rgba(8, 12, 22, 0.55), rgba(2, 4, 10, 0.88));
+    backdrop-filter: blur(7px);
+  }
+  #overlay.hidden { display: none; }
+  .hidden { display: none; }
+  .card {
+    width: min(470px, 94vw);
+    padding: 30px 30px 22px;
+    border-radius: 20px;
+    text-align: center;
+    background: linear-gradient(180deg, rgba(19, 25, 40, 0.94), rgba(9, 13, 23, 0.96));
+    box-shadow:
+      0 0 0 1px rgba(130, 150, 190, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 34px 90px -26px #000;
+  }
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.85;
+  }
+  h1 {
+    margin: 10px 0 8px;
+    font-size: clamp(24px, 6vw, 32px);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #f2f5ff;
+    text-shadow: 0 0 34px rgba(255, 196, 90, 0.25);
+  }
+  .sub {
+    margin: 0 auto 22px;
+    max-width: 38ch;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--dim);
+  }
+  .actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  button {
+    font: inherit;
+    font-size: 13.5px;
+    cursor: pointer;
+    border: 0;
+    border-radius: 11px;
+    padding: 12px 18px;
+    transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+  }
+  button:active { transform: translateY(1px); }
+  button:focus-visible { outline: 2px solid rgba(255, 196, 90, 0.75); outline-offset: 2px; }
+  .primary {
+    background: linear-gradient(180deg, #ffd27a, #f4b53f);
+    color: #241700;
+    font-weight: 700;
+    box-shadow: 0 10px 28px -12px rgba(255, 196, 90, 0.65);
+  }
+  .primary:hover { background: linear-gradient(180deg, #ffde99, #f8c25a); }
+  .ghost {
+    background: rgba(255, 255, 255, 0.06);
+    color: #c8d0e2;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+  .ghost:hover { background: rgba(255, 255, 255, 0.11); }
+  button:disabled { opacity: 0.6; cursor: progress; }
+  .meta {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 18px;
+    min-height: 18px;
+    font-size: 11.5px;
+    color: var(--dim);
+  }
+  .loading { color: var(--gold); animation: pulse 1.2s ease-in-out infinite; }
+  .loading.hidden { display: none; }
+  .dotsep { opacity: 0.35; }
+  .keys {
+    margin: 20px 0 0;
+    padding-top: 16px;
+    border-top: 1px solid rgba(130, 150, 190, 0.13);
+    font-size: 11px;
+    line-height: 1.7;
+    color: #4b556c;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+  #toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    z-index: 4;
+    transform: translate(-50%, 12px);
+    padding: 9px 16px;
+    border-radius: 999px;
+    background: rgba(16, 22, 36, 0.96);
+    color: #dfe6f5;
+    font-size: 12.5px;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 12px 34px -14px #000, inset 0 0 0 1px rgba(140, 160, 200, 0.2);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  @media (max-width: 520px) {
+    .card { padding: 24px 18px 18px; }
+    .keys { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="tree" width="792" height="1036" aria-label="Hoạt cảnh cây thông Giáng sinh 3D bằng ký tự ASCII"></canvas>
+
+  <div id="overlay">
+    <div class="card" id="startCard">
+      <div class="eyebrow">ASCII &middot; 3D &middot; 2026</div>
+      <h1>Christmas Tree</h1>
+      <p class="sub">Cây thông 3D dựng bằng ký tự, xoay trọn một vòng, nhạc Giáng sinh tổng hợp thủ công bằng Web Audio.</p>
+      <div class="actions">
+        <button id="btnSound" class="primary" type="button">&#9654; Bắt đầu với nhạc</button>
+        <button id="btnMute" class="ghost" type="button">Không nhạc</button>
+      </div>
+      <div class="meta">
+        <span id="loading" class="loading hidden">Đang tổng hợp nhạc&hellip;</span>
+        <span class="dotsep hidden" id="metaSep">&middot;</span>
+        <span id="themeLabel">Last Christmas</span>
+      </div>
+      <p class="keys">Space dừng/tiếp &middot; R chạy lại &middot; S lưu ảnh &middot; &larr;/&rarr; tua &middot; T đổi nhạc &middot; Esc thoát</p>
+    </div>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+// Early error capture so headless runs are diagnosable via document.title.
+window.__errors = [];
+window.addEventListener("error", function (e) {
+  var msg = String((e && (e.message || e.error)) || "script error");
+  window.__errors.push(msg);
+  try { document.title = "ERROR: " + msg; } catch (_) {}
+});
+window.addEventListener("unhandledrejection", function (e) {
+  var msg = String((e && e.reason && (e.reason.stack || e.reason.message)) || e.reason || "unhandled rejection");
+  window.__errors.push(msg);
+  try { document.title = "ERROR: " + msg; } catch (_) {}
+});
+</script>
+<script>
+"use strict";
+
+/* ===================== scene.js ===================== */
+// scene.js -- constants, deterministic RNG, 3D scene construction and projection.
+// Faithful port of christmas_tree.py lines 1-163 and 166-418 (numpy/pygame imports and the
+// code-pane-only palette are skipped). No numpy: every broadcast is translated index-wise.
+
+const TAU = 2.0 * Math.PI;
+
+// Scene & animation choreography (seconds) -- py 31-38
+const DURATION = 20.0;
+const T_GROW = [0.7, 5.6];
+const T_GARLAND = [6.4, 8.6];
+const T_BALLS = [7.4, 9.5];
+const T_LIGHTS = [8.3, 11.3];
+const T_GIFTS = [10.0, 11.5];
+const T_STAR = 11.8;
+const T_MSG = 13.0;
+
+// 3D world bounds -- py 41-44
+const GROUND = -1.12;
+const Y0 = -0.76;
+const Y1 = 1.24;
+const ROT_SPEED = 0.31;
+
+// Material kinds -- py 47
+const NEEDLE = 0, SNOW = 1, CONE = 2, TRUNK = 3, TINSEL = 4, BALL = 5, LIGHT = 6, GIFT = 7, RIBBON = 8;
+
+// Colours (linear 0..1 RGB) -- py 50-58
+const WHITE = [1.00, 1.00, 1.00];
+const SNOW_COL = [0.88, 0.94, 1.00];
+const GOLD = [1.00, 0.84, 0.28];
+const BAUBLE_GOLD = [1.00, 0.78, 0.24];
+const RED = [0.96, 0.20, 0.24];
+const WARM = [1.00, 0.88, 0.50];
+const GREEN_BOX = [0.18, 0.78, 0.34];
+const BLUE_BOX = [0.22, 0.48, 0.98];
+const SILVER = [0.86, 0.90, 0.98];
+
+// Luminance-ordered ASCII ramp -- py 61-62
+const RAMP = " .,:;-~=+*^oxv%&#W@";
+const RAMP_ARR = (function () {
+  const out = new Uint8Array(RAMP.length);
+  for (let i = 0; i < RAMP.length; i++) out[i] = RAMP.charCodeAt(i);
+  return out;
+})();
+
+// Default layout -- py 65-74
+const TITLE = "ASCII Christmas Tree";
+const CW = 9, CH = 14, FONT_PX = 15;
+const COLS = 88, ROWS = 74;
+const W = COLS * CW, H = ROWS * CH;
+const MONO = "consolas,menlo,dejavusansmono,couriernew,monospace";
+const HINT = "Space pause · R restart · S screenshot · ←/→ scrub";
+const BG_RGB = [5, 8, 15];
+const DIM = [96, 104, 122], ACCENT = [255, 196, 90], SIGN = [176, 168, 196];
+const DEFAULT_AUTHOR = "@cfs.ascii";
+const DEFAULT_MESSAGE = "M E R R Y   C H R I S T M A S   2 0 2 6";
+
+// Shared PRNG -- copied verbatim from CONTRACT.md
+function makeRng(seed) {
+  let s = seed >>> 0;
+  let spare = null;
+
+  function next() {
+    s = (s + 0x6D2B79F5) | 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+
+  function gauss() {
+    if (spare !== null) { const v = spare; spare = null; return v; }
+    let u = 0, v = 0;
+    while (u === 0) u = next();
+    while (v === 0) v = next();
+    const mag = Math.sqrt(-2.0 * Math.log(u));
+    spare = mag * Math.sin(2.0 * Math.PI * v);
+    return mag * Math.cos(2.0 * Math.PI * v);
+  }
+
+  function nOf(shape) {
+    if (shape === undefined) return 1;
+    if (typeof shape === 'number') return shape;
+    let n = 1;
+    for (let i = 0; i < shape.length; i++) n *= shape[i];
+    return n;
+  }
+
+  function random(shape) {
+    if (shape === undefined) return next();
+    const n = nOf(shape), out = new Float32Array(n);
+    for (let i = 0; i < n; i++) out[i] = next();
+    return out;
+  }
+
+  function uniform(a, b, shape) {
+    if (shape === undefined) return a + (b - a) * next();
+    const n = nOf(shape), out = new Float32Array(n);
+    for (let i = 0; i < n; i++) out[i] = a + (b - a) * next();
+    return out;
+  }
+
+  function normal(mu, sigma, shape) {
+    if (mu === undefined) mu = 0;
+    if (sigma === undefined) sigma = 1;
+    if (shape === undefined) return mu + sigma * gauss();
+    const n = nOf(shape), out = new Float32Array(n);
+    for (let i = 0; i < n; i++) out[i] = mu + sigma * gauss();
+    return out;
+  }
+
+  function integers(low, high, shape) {
+    if (shape === undefined) return low + Math.floor(next() * (high - low));
+    const n = nOf(shape), out = new Int32Array(n);
+    for (let i = 0; i < n; i++) out[i] = low + Math.floor(next() * (high - low));
+    return out;
+  }
+
+  // opts: { replace = true, p = null }; a is a count or an array of values
+  function choice(a, size, opts) {
+    opts = opts || {};
+    const p = opts.p || null;
+    const replace = opts.replace !== false;
+    const isCount = typeof a === 'number';
+    const nItems = isCount ? a : a.length;
+    const get = isCount ? function (i) { return i; } : function (i) { return a[i]; };
+    const out = new Int32Array(size);
+    if (p) {
+      const cdf = new Float64Array(p.length);
+      let acc = 0;
+      for (let i = 0; i < p.length; i++) { acc += p[i]; cdf[i] = acc; }
+      for (let i = 0; i < size; i++) {
+        const u = next() * acc;
+        let k = 0;
+        while (k < cdf.length - 1 && u > cdf[k]) k++;
+        out[i] = get(k);
+      }
+    } else if (replace) {
+      for (let i = 0; i < size; i++) out[i] = get(Math.floor(next() * nItems));
+    } else {
+      const pool = new Int32Array(nItems);
+      for (let i = 0; i < nItems; i++) pool[i] = i;
+      for (let i = 0; i < size; i++) {
+        const j = i + Math.floor(next() * (nItems - i));
+        const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+        out[i] = get(pool[i]);
+      }
+    }
+    return out;
+  }
+
+  return { next, random, uniform, normal, integers, choice };
+}
+
+// ---------------------------------------------------------------------------
+// Math helpers -- py 125-163
+// ---------------------------------------------------------------------------
+
+// py unit(): normalise each row of a flat 3n array (axis=-1, keepdims).
+function unit(v) {
+  const n = v.length / 3;
+  const out = new Float32Array(v.length);
+  for (let i = 0; i < n; i++) {
+    const j = i * 3;
+    const x = v[j], y = v[j + 1], z = v[j + 2];
+    const norm = Math.sqrt(x * x + y * y + z * z);
+    const d = norm > 1e-8 ? norm : 1e-8;
+    out[j] = x / d;
+    out[j + 1] = y / d;
+    out[j + 2] = z / d;
+  }
+  return out;
+}
+
+// py smooth(): scalar or Float32Array in, same shape out.
+function smooth(x) {
+  if (typeof x === 'number') {
+    const t = x < 0.0 ? 0.0 : (x > 1.0 ? 1.0 : x);
+    return t * t * (3.0 - 2.0 * t);
+  }
+  const out = new Float32Array(x.length);
+  for (let i = 0; i < x.length; i++) {
+    let t = x[i];
+    if (t < 0.0) t = 0.0; else if (t > 1.0) t = 1.0;
+    out[i] = t * t * (3.0 - 2.0 * t);
+  }
+  return out;
+}
+
+// py fib_sphere(): flat (n,3) sphere points, golden-angle spiral.
+function fibSphere(n) {
+  const out = new Float32Array(n * 3);
+  for (let k = 0; k < n; k++) {
+    const i = k + 0.5;
+    const z = 1.0 - 2.0 * i / n;
+    const r = Math.sqrt(Math.max(1.0 - z * z, 0.0));
+    const phi = i * 2.39996323;
+    out[k * 3] = Math.cos(phi) * r;
+    out[k * 3 + 1] = z;
+    out[k * 3 + 2] = Math.sin(phi) * r;
+  }
+  return out;
+}
+
+// py envelope(): silhouette radius profile, scalar or array.
+function envelope(y) {
+  if (typeof y === 'number') {
+    const u0 = (y - Y0) / (Y1 - Y0);
+    const u = u0 < 0.0 ? 0.0 : (u0 > 1.0 ? 1.0 : u0);
+    const tiers = 1.0 + 0.07 * Math.sin(u * TAU * 5.0) * (1.0 - u);
+    return 0.96 * Math.pow(1.0 - u, 0.90) * tiers;
+  }
+  const out = new Float32Array(y.length);
+  for (let i = 0; i < y.length; i++) {
+    const u0 = (y[i] - Y0) / (Y1 - Y0);
+    const u = u0 < 0.0 ? 0.0 : (u0 > 1.0 ? 1.0 : u0);
+    const tiers = 1.0 + 0.07 * Math.sin(u * TAU * 5.0) * (1.0 - u);
+    out[i] = 0.96 * Math.pow(1.0 - u, 0.90) * tiers;
+  }
+  return out;
+}
+
+// py grow_time(): growth start time as a function of height, scalar or array.
+function growTime(y) {
+  const span = Y1 - GROUND;
+  if (typeof y === 'number') {
+    const u0 = (y - GROUND) / span;
+    const u = u0 < 0.0 ? 0.0 : (u0 > 1.0 ? 1.0 : u0);
+    return T_GROW[0] + (T_GROW[1] - T_GROW[0]) * u;
+  }
+  const out = new Float32Array(y.length);
+  for (let i = 0; i < y.length; i++) {
+    const u0 = (y[i] - GROUND) / span;
+    const u = u0 < 0.0 ? 0.0 : (u0 > 1.0 ? 1.0 : u0);
+    out[i] = T_GROW[0] + (T_GROW[1] - T_GROW[0]) * u;
+  }
+  return out;
+}
+
+// py point_in_poly(): even-odd test; px/py are arrays, poly is [[x,y], ...].
+// Returns a Uint8Array of 0/1 (numpy bool semantics).
+function pointInPoly(px, py, poly) {
+  const m = px.length;
+  const res = new Uint8Array(m);
+  const n = poly.length;
+  for (let i = 0; i < n; i++) {
+    const p1 = poly[i];
+    const p2 = poly[(i + 1) % n];
+    const x1 = p1[0], y1 = p1[1], x2 = p2[0], y2 = p2[1];
+    for (let k = 0; k < m; k++) {
+      const cross = (y1 > py[k]) !== (y2 > py[k]);
+      if (!cross) continue;
+      const xInt = (x2 - x1) * (py[k] - y1) / (y2 - y1 + 1e-9) + x1;
+      if (px[k] < xInt) res[k] ^= 1;
+    }
+  }
+  return res;
+}
+
+// ---------------------------------------------------------------------------
+// Parts / SceneData -- py 166-242
+// ---------------------------------------------------------------------------
+
+class Parts {
+  constructor() {
+    this._pos = [];
+    this._nrm = [];
+    this._col = [];
+    this._kind = [];
+    this._t0 = [];
+    this._base = [];
+    this._centre = [];
+    this._phase = [];
+    this._pop = [];
+  }
+
+  // add(pos, nrm, col, kind, t0, base=1.0, centre=null, phase=0.0, pop=false)
+  add(pos, nrm, col, kind, t0, base, centre, phase, pop) {
+    if (base === undefined) base = 1.0;
+    if (centre === undefined) centre = null;
+    if (phase === undefined) phase = 0.0;
+    if (pop === undefined) pop = false;
+
+    const posArr = (pos instanceof Float32Array) ? pos : Float32Array.from(pos);
+    const n = posArr.length / 3;
+
+    const nrmSrc = (nrm instanceof Float32Array) ? nrm : Float32Array.from(nrm);
+    const nrmArr = unit(nrmSrc);
+
+    const colSrc = (col instanceof Float32Array) ? col : Float32Array.from(col);
+    let colArr;
+    if (colSrc.length === 3) {
+      // np.broadcast_to(col_arr, (n,3)).copy()
+      colArr = new Float32Array(n * 3);
+      const r = colSrc[0], g = colSrc[1], b = colSrc[2];
+      for (let i = 0; i < n; i++) {
+        const j = i * 3;
+        colArr[j] = r; colArr[j + 1] = g; colArr[j + 2] = b;
+      }
+    } else {
+      colArr = colSrc;
+    }
+
+    let kindArr;
+    if (typeof kind === 'number') {
+      kindArr = new Int32Array(n);
+      kindArr.fill(kind);
+    } else {
+      kindArr = (kind instanceof Int32Array) ? kind : Int32Array.from(kind);
+    }
+
+    const t0Arr = (typeof t0 === 'number') ? new Float32Array(n).fill(t0)
+      : ((t0 instanceof Float32Array) ? t0 : Float32Array.from(t0));
+    const baseArr = (typeof base === 'number') ? new Float32Array(n).fill(base)
+      : ((base instanceof Float32Array) ? base : Float32Array.from(base));
+
+    let cenArr;
+    if (centre === null) {
+      cenArr = new Float32Array(posArr); // pos.copy()
+    } else {
+      const cenSrc = (centre instanceof Float32Array) ? centre : Float32Array.from(centre);
+      if (cenSrc.length === 3) {
+        cenArr = new Float32Array(n * 3);
+        const x = cenSrc[0], y = cenSrc[1], z = cenSrc[2];
+        for (let i = 0; i < n; i++) {
+          const j = i * 3;
+          cenArr[j] = x; cenArr[j + 1] = y; cenArr[j + 2] = z;
+        }
+      } else {
+        cenArr = cenSrc;
+      }
+    }
+
+    const phaseArr = (typeof phase === 'number') ? new Float32Array(n).fill(phase)
+      : ((phase instanceof Float32Array) ? phase : Float32Array.from(phase));
+
+    const popArr = new Uint8Array(n);
+    popArr.fill(pop ? 1 : 0);
+
+    this._pos.push(posArr);
+    this._nrm.push(nrmArr);
+    this._col.push(colArr);
+    this._kind.push(kindArr);
+    this._t0.push(t0Arr);
+    this._base.push(baseArr);
+    this._centre.push(cenArr);
+    this._phase.push(phaseArr);
+    this._pop.push(popArr);
+  }
+
+  compile() {
+    const chunks = this._pos.length;
+    let n = 0;
+    for (let i = 0; i < chunks; i++) n += this._pos[i].length / 3;
+
+    const pos = new Float32Array(n * 3);
+    const nrm = new Float32Array(n * 3);
+    const col = new Float32Array(n * 3);
+    const centre = new Float32Array(n * 3);
+    const kind = new Int32Array(n);
+    const t0 = new Float32Array(n);
+    const base = new Float32Array(n);
+    const phase = new Float32Array(n);
+    const pop = new Uint8Array(n);
+
+    let off3 = 0, off1 = 0;
+    for (let i = 0; i < chunks; i++) {
+      pos.set(this._pos[i], off3);
+      nrm.set(this._nrm[i], off3);
+      col.set(this._col[i], off3);
+      centre.set(this._centre[i], off3);
+      kind.set(this._kind[i], off1);
+      t0.set(this._t0[i], off1);
+      base.set(this._base[i], off1);
+      phase.set(this._phase[i], off1);
+      pop.set(this._pop[i], off1);
+      off3 += this._pos[i].length;
+      off1 += this._kind[i].length;
+    }
+
+    return { n: n, pos: pos, nrm: nrm, col: col, kind: kind, t0: t0, base: base, centre: centre, phase: phase, pop: pop };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// build() -- py 245-402
+// ---------------------------------------------------------------------------
+
+function build() {
+  const rng = makeRng(7);
+  const q = new Parts();
+  const tips = []; // branch-tip points, each [x, y, z]
+
+  // needle whorls: drooping branches, denser and longer at the bottom
+  const NW = 25;
+  const yLinA = Y0 + 0.02, yLinB = Y1 - 0.08;
+  for (let i = 0; i < NW; i++) {
+    const y = yLinA + (yLinB - yLinA) * i / (NW - 1); // np.linspace
+    const u = (y - Y0) / (Y1 - Y0);
+    const R = envelope(y) + 0.05;
+    const nb = Math.trunc(7 + 12 * (1.0 - u));
+
+    for (let b = 0; b < nb; b++) {
+      const a = TAU * (b + 0.5 * rng.random()) / nb + i * 0.77;
+      const L = R * rng.uniform(0.85, 1.08);
+      const np = Math.trunc(26 + 240 * L);
+
+      const sRaw = rng.random(np);
+      const s = new Float32Array(np);
+      for (let k = 0; k < np; k++) s[k] = Math.pow(sRaw[k], 0.65); // 0 trunk .. 1 tip
+
+      const dx = Math.cos(a), dz = Math.sin(a);
+      const sideX = -Math.sin(a), sideZ = Math.cos(a);
+
+      const spreadN = rng.normal(0, 1, np);
+      const spread = new Float32Array(np);
+      for (let k = 0; k < np; k++) spread[k] = (0.025 + 0.09 * s[k]) * spreadN[k];
+
+      const p = new Float32Array(np * 3);
+      for (let k = 0; k < np; k++) {
+        const sl = s[k] * L;
+        p[k * 3] = dx * sl + sideX * spread[k];
+        p[k * 3 + 1] = 0.0;
+        p[k * 3 + 2] = dz * sl + sideZ * spread[k];
+      }
+
+      const jitter = rng.normal(0, 1, np);
+      for (let k = 0; k < np; k++) {
+        const sl = s[k] * L;
+        p[k * 3 + 1] = y + 0.06 * sl - 0.20 * (sl * sl) + 0.012 * jitter[k];
+      }
+
+      // d*0.75 + [0, 0.55, 0] + 0.3*normal((n,3))
+      const nrmRaw = rng.normal(0, 1, np * 3);
+      const nrmIn = new Float32Array(np * 3);
+      for (let k = 0; k < np; k++) {
+        const j = k * 3;
+        nrmIn[j] = dx * 0.75 + 0.3 * nrmRaw[j];
+        nrmIn[j + 1] = 0.55 + 0.3 * nrmRaw[j + 1];
+        nrmIn[j + 2] = dz * 0.75 + 0.3 * nrmRaw[j + 2];
+      }
+      const nrm = unit(nrmIn);
+
+      const aoR = rng.uniform(0.75, 1.1, np);
+      const ao = new Float32Array(np);
+      for (let k = 0; k < np; k++) ao[k] = (0.30 + 0.70 * Math.pow(s[k], 1.3)) * aoR[k];
+
+      const snowR = rng.random(np);
+      const greenR = rng.random(np); // rng.random((n,1)): one factor per point
+
+      const colArr = new Float32Array(np * 3);
+      const kindArr = new Int32Array(np);
+      const t0Arr = new Float32Array(np);
+      const baseArr = new Float32Array(np);
+      const g0 = growTime(y);
+      for (let k = 0; k < np; k++) {
+        const snow = (s[k] > 0.5) && (snowR[k] < 0.07 * s[k]) && (nrm[k * 3 + 1] > 0.5);
+        const j = k * 3;
+        if (snow) {
+          colArr[j] = SNOW_COL[0]; colArr[j + 1] = SNOW_COL[1]; colArr[j + 2] = SNOW_COL[2];
+          kindArr[k] = SNOW;
+          baseArr[k] = 1.0;
+        } else {
+          const gr = greenR[k];
+          colArr[j] = 0.10 + 0.12 * gr;
+          colArr[j + 1] = 0.48 + 0.38 * gr;
+          colArr[j + 2] = 0.18 + 0.14 * gr;
+          kindArr[k] = NEEDLE;
+          baseArr[k] = ao[k];
+        }
+        t0Arr[k] = g0 + 0.45 * s[k];
+      }
+      q.add(p, nrm, colArr, kindArr, t0Arr, baseArr);
+
+      const tl = 0.93 * L;
+      tips.push([dx * tl, y + 0.06 * tl - 0.20 * (tl * tl), dz * tl]);
+    }
+  }
+
+  // dark inner cone so nothing shows through the branches
+  const mCone = 4200;
+  const coneYr = rng.random(mCone);
+  const conePhr = rng.random(mCone);
+  const conePos = new Float32Array(mCone * 3);
+  const coneNrm = new Float32Array(mCone * 3);
+  const coneY = new Float32Array(mCone);
+  for (let k = 0; k < mCone; k++) {
+    const y = Y0 + (Y1 - 0.1 - Y0) * coneYr[k];
+    const phi = conePhr[k] * TAU;
+    const cph = Math.cos(phi), sph = Math.sin(phi);
+    const r = 0.6 * envelope(y);
+    const j = k * 3;
+    coneY[k] = y;
+    conePos[j] = cph * r; conePos[j + 1] = y; conePos[j + 2] = sph * r;
+    coneNrm[j] = cph; coneNrm[j + 1] = 0.3; coneNrm[j + 2] = sph;
+  }
+  q.add(conePos, coneNrm, [0.06, 0.28, 0.10], CONE, growTime(coneY), 0.55);
+
+  // trunk
+  const mTr = 1000;
+  const trYr = rng.random(mTr);
+  const trPhr = rng.random(mTr);
+  const trPos = new Float32Array(mTr * 3);
+  const trNrm = new Float32Array(mTr * 3);
+  const trCol = new Float32Array(mTr * 3);
+  const trY = new Float32Array(mTr);
+  for (let k = 0; k < mTr; k++) {
+    const y = GROUND + trYr[k] * (Y0 + 0.1 - GROUND);
+    const phi = trPhr[k] * TAU;
+    const cph = Math.cos(phi), sph = Math.sin(phi);
+    const bark = 0.75 + 0.25 * Math.sign(Math.sin(phi * 30.0 + y * 5.0));
+    const j = k * 3;
+    trY[k] = y;
+    trPos[j] = cph * 0.08; trPos[j + 1] = y; trPos[j + 2] = sph * 0.08;
+    trNrm[j] = cph; trNrm[j + 1] = 0.0; trNrm[j + 2] = sph;
+    trCol[j] = 0.42 * bark; trCol[j + 1] = 0.24 * bark; trCol[j + 2] = 0.12 * bark;
+  }
+  q.add(trPos, trNrm, trCol, TRUNK, growTime(trY));
+
+  // tinsel garland: gold spiral drooping in swags between hanging points
+  const nTin = 1800;
+  const turns = 3.6;
+  const tinU = new Float32Array(nTin);
+  const tinCa = new Float32Array(nTin);
+  const tinSa = new Float32Array(nTin);
+  const tinLine = new Float32Array(nTin * 3);
+  for (let k = 0; k < nTin; k++) {
+    const u = k / (nTin - 1); // np.linspace(0,1,1800)
+    const yg = Y0 + 0.15 + (Y1 - Y0 - 0.45) * u;
+    const ag = TAU * turns * u + 0.9;
+    const swag = -0.07 * Math.abs(Math.sin(ag * 2.5));
+    const rg = envelope(yg) + 0.07;
+    const j = k * 3;
+    tinU[k] = u;
+    tinCa[k] = Math.cos(ag);
+    tinSa[k] = Math.sin(ag);
+    tinLine[j] = tinCa[k] * rg;
+    tinLine[j + 1] = yg + swag;
+    tinLine[j + 2] = tinSa[k] * rg;
+  }
+  for (let rep = 0; rep < 3; rep++) {
+    const nrmJit = rng.normal(0, 1, nTin * 3); // line.shape == (1800, 3)
+    const tinNrm = new Float32Array(nTin * 3);
+    for (let k = 0; k < nTin; k++) {
+      const j = k * 3;
+      tinNrm[j] = tinCa[k] + 0.6 * nrmJit[j];
+      tinNrm[j + 1] = 0.3 + 0.6 * nrmJit[j + 1];
+      tinNrm[j + 2] = tinSa[k] + 0.6 * nrmJit[j + 2];
+    }
+    const posJit = rng.normal(0, 1, nTin * 3);
+    const tinPos = new Float32Array(nTin * 3);
+    for (let k = 0; k < nTin * 3; k++) tinPos[k] = tinLine[k] + 0.016 * posJit[k];
+    const tinPhR = rng.random(nTin);
+    const tinPh = new Float32Array(nTin);
+    const tinT0 = new Float32Array(nTin);
+    for (let k = 0; k < nTin; k++) {
+      tinPh[k] = tinPhR[k] * TAU;
+      tinT0[k] = T_GARLAND[0] + tinU[k] * (T_GARLAND[1] - T_GARLAND[0]);
+    }
+    q.add(tinPos, tinNrm, GOLD, TINSEL, tinT0, 1.0, null, tinPh);
+  }
+
+  // baubles: red, gold and silver spheres nestled on the tree silhouette
+  const sphere = fibSphere(160);
+  for (let k = 0; k < 34; k++) {
+    const u = (k + rng.random()) / 34.0;
+    const y = Y0 + 0.08 + u * (Y1 - Y0 - 0.38);
+    const a = k * 2.39996 + rng.random() * 0.4;
+    const E = envelope(y) + 0.02;
+    const cx = Math.cos(a) * E, cy = y - 0.03, cz = Math.sin(a) * E;
+    const rad = 0.058 + 0.032 * (1.0 - u);
+    const col = (k % 2 === 0) ? RED : ((k % 4 === 1) ? BAUBLE_GOLD : SILVER);
+    const t0 = T_BALLS[0] + rng.random() * (T_BALLS[1] - T_BALLS[0]);
+
+    const bp = new Float32Array(160 * 3);
+    for (let m = 0; m < 160; m++) {
+      const j = m * 3;
+      bp[j] = cx + sphere[j] * rad;
+      bp[j + 1] = cy + sphere[j + 1] * rad;
+      bp[j + 2] = cz + sphere[j + 2] * rad;
+    }
+    q.add(bp, sphere, col, BALL, t0, 1.0, [cx, cy, cz], 0.0, true);
+  }
+
+  // fairy lights on the branch tips
+  const nTips = tips.length;
+  const tipsArr = new Float32Array(nTips * 3);
+  for (let k = 0; k < nTips; k++) {
+    tipsArr[k * 3] = tips[k][0];
+    tipsArr[k * 3 + 1] = tips[k][1];
+    tipsArr[k * 3 + 2] = tips[k][2];
+  }
+  const pickN = Math.min(170, nTips);
+  const pick = rng.choice(nTips, pickN, { replace: false });
+  const bulb = fibSphere(16);
+  const ltr = rng.random(pickN);
+  const lightT0 = new Float32Array(pickN);
+  for (let j = 0; j < pickN; j++) lightT0[j] = T_LIGHTS[0] + ltr[j] * (T_LIGHTS[1] - T_LIGHTS[0]);
+
+  for (let j = 0; j < pickN; j++) {
+    const ci = pick[j];
+    const cx = tipsArr[ci * 3], cy = tipsArr[ci * 3 + 1], cz = tipsArr[ci * 3 + 2];
+    const col = (rng.random() < 0.8) ? WARM : [1.0, 0.95, 0.85];
+    const ph = rng.random() * TAU;
+    const lp = new Float32Array(16 * 3);
+    for (let m = 0; m < 16; m++) {
+      const jj = m * 3;
+      lp[jj] = cx + bulb[jj] * 0.03;
+      lp[jj + 1] = cy + bulb[jj + 1] * 0.03;
+      lp[jj + 2] = cz + bulb[jj + 2] * 0.03;
+    }
+    q.add(lp, bulb, col, LIGHT, lightT0[j], 1.0, [cx, cy, cz], ph);
+  }
+
+  // presents: boxes with a crossed ribbon and a bow around the base
+  const gifts = [
+    [0.3, 0.96, 0.25, 0.20, 0.24, 0.4, RED, GOLD],
+    [1.4, 1.02, 0.23, 0.23, 0.22, 0.9, BLUE_BOX, SILVER],
+    [2.5, 0.95, 0.28, 0.16, 0.22, 1.0, GOLD, RED],
+    [3.6, 1.00, 0.22, 0.22, 0.22, 0.3, RED, WHITE],
+    [4.6, 0.95, 0.25, 0.19, 0.25, 0.1, GREEN_BOX, RED],
+    [5.5, 1.02, 0.22, 0.20, 0.21, 0.7, BLUE_BOX, GOLD]
+  ];
+  const loop = fibSphere(64);
+  const FN = [[0, 1, 0], [1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1]];
+
+  for (let g = 0; g < gifts.length; g++) {
+    const a = gifts[g][0], dist = gifts[g][1], w = gifts[g][2], h = gifts[g][3];
+    const d = gifts[g][4], rot = gifts[g][5], body = gifts[g][6], rib = gifts[g][7];
+
+    const areas = [w * d, h * d, h * d, h * w, h * w];
+    const areaSum = areas[0] + areas[1] + areas[2] + areas[3] + areas[4];
+    const m = Math.trunc(2600 * areaSum);
+    const probs = new Float32Array(5);
+    for (let k = 0; k < 5; k++) probs[k] = areas[k] / areaSum;
+
+    const face = rng.choice(5, m, { p: probs });
+    const faRaw = rng.random(m);
+    const fbRaw = rng.random(m);
+
+    const ca = Math.cos(rot), sa = Math.sin(rot);
+    const ccx = Math.cos(a) * dist, ccy = GROUND, ccz = Math.sin(a) * dist;
+
+    const wp = new Float32Array(m * 3);
+    const wn = new Float32Array(m * 3);
+    const wcol = new Float32Array(m * 3);
+    const wkind = new Int32Array(m);
+
+    for (let k = 0; k < m; k++) {
+      const f = face[k];
+      const fa = faRaw[k] - 0.5, fb = fbRaw[k] - 0.5;
+
+      let lx;
+      if (f === 0) lx = fa * w;
+      else if (f === 1) lx = w / 2;
+      else if (f === 2) lx = -w / 2;
+      else lx = fa * w;
+
+      const ly = (f === 0) ? h : (fb + 0.5) * h;
+
+      let lz;
+      if (f === 0) lz = fb * d;
+      else if (f <= 2) lz = fa * d;
+      else if (f === 3) lz = d / 2;
+      else lz = -d / 2;
+
+      const nx0 = FN[f][0], ny0 = FN[f][1], nz0 = FN[f][2];
+
+      const onX = Math.abs(lx) < 0.024;
+      const onZ = Math.abs(lz) < 0.024;
+      let isRib;
+      if (f === 0) isRib = (onX || onZ);
+      else if (f <= 2) isRib = onZ;
+      else isRib = onX;
+
+      const j = k * 3;
+      wp[j] = lx * ca - lz * sa + ccx;
+      wp[j + 1] = ly + ccy;
+      wp[j + 2] = lx * sa + lz * ca + ccz;
+
+      wn[j] = nx0 * ca - nz0 * sa;
+      wn[j + 1] = ny0;
+      wn[j + 2] = nx0 * sa + nz0 * ca;
+
+      if (isRib) {
+        wcol[j] = rib[0]; wcol[j + 1] = rib[1]; wcol[j + 2] = rib[2];
+        wkind[k] = RIBBON;
+      } else {
+        wcol[j] = body[0]; wcol[j + 1] = body[1]; wcol[j + 2] = body[2];
+        wkind[k] = GIFT;
+      }
+    }
+
+    const tGift = T_GIFTS[0] + (g / gifts.length) * (T_GIFTS[1] - T_GIFTS[0]);
+    q.add(wp, wn, wcol, wkind, tGift, 1.0, [ccx, ccy + h * 0.5, ccz], 0.0, true);
+
+    // crossed bow loops on top of each gift
+    for (let bi = 0; bi < 2; bi++) {
+      const ba = (bi === 0) ? 0.0 : Math.PI * 0.5;
+      const cr = Math.cos(ba + rot), sr = Math.sin(ba + rot);
+      const obx = cr * 0.035, oby = h + 0.03, obz = sr * 0.035;
+      const bp = new Float32Array(64 * 3);
+      for (let k = 0; k < 64; k++) {
+        const j = k * 3;
+        const bx = loop[j] * 0.045, by = loop[j + 1] * 0.026, bz = loop[j + 2] * 0.024;
+        bp[j] = bx * cr - bz * sr + ccx + obx;
+        bp[j + 1] = by + ccy + oby;
+        bp[j + 2] = bx * sr + bz * cr + ccz + obz;
+      }
+      q.add(bp, loop, rib, RIBBON, tGift + 0.05, 1.0, [ccx + obx, ccy + oby, ccz + obz], 0.0, true);
+    }
+  }
+
+  return q.compile();
+}
+
+// ---------------------------------------------------------------------------
+// project() -- py 405-418
+// ---------------------------------------------------------------------------
+
+function project(pts, rot, cols, rows, aspect) {
+  const n = pts.length / 3;
+  const ca = Math.cos(rot), sa = Math.sin(rot);
+  const pitch = 0.15;
+  const cp = Math.cos(pitch), sp = Math.sin(pitch);
+
+  const sx = new Float32Array(n);
+  const sy = new Float32Array(n);
+  const zpOut = new Float32Array(n);
+
+  for (let i = 0; i < n; i++) {
+    const j = i * 3;
+    const x = pts[j] * ca - pts[j + 2] * sa;
+    const y = pts[j + 1] - 0.12;
+    const z = pts[j] * sa + pts[j + 2] * ca;
+    const yp = y * cp - z * sp;
+    const zp = y * sp + z * cp + 4.85;
+    const scale = 2.65 / Math.max(zp, 0.25);
+    sx[i] = cols * 0.5 + x * scale * (rows * 0.40) / aspect;
+    sy[i] = rows * 0.44 - yp * scale * (rows * 0.40);
+    zpOut[i] = zp;
+  }
+
+  return { sx: sx, sy: sy, zp: zpOut };
+}
+
+
+/* ===================== frame.js ===================== */
+// frame.js -- background field, top star and per-frame ASCII rasterisation.
+// Faithful port of christmas_tree.py lines 421-674: Background, star(), put(), step_frame().
+// No numpy: every broadcast is translated index-wise. Shared helpers/constants come from scene.js.
+
+// ---------------------------------------------------------------------------
+// Local scalar helpers
+// ---------------------------------------------------------------------------
+
+// Bind the Math builtins once. Semantics identical to `Math.x(...)`, but a local
+// binding lets V8 inline them instead of reloading through the global object.
+const frmRound = Math.round, frmSin = Math.sin, frmCos = Math.cos;
+const frmAbs = Math.abs, frmMax = Math.max, frmMin = Math.min;
+const frmPow = Math.pow, frmTrunc = Math.trunc, frmCeil = Math.ceil;
+const frmFloor = Math.floor, frmHypot = Math.hypot;
+
+function frameClamp(v, lo, hi) {
+  return v < lo ? lo : (v > hi ? hi : v);
+}
+
+// Python float modulo: the result takes the sign of the divisor (n > 0 here).
+function frameMod(a, n) {
+  const r = a % n;
+  return r < 0.0 ? r + n : r;
+}
+
+function frameDegrees(rad) {
+  return rad * (180.0 / Math.PI);
+}
+
+// ---------------------------------------------------------------------------
+// Background -- py 421-487
+// ---------------------------------------------------------------------------
+
+class Background {
+  constructor(cols, rows) {
+    const rng = makeRng(42); // same seed as Python, same call order
+    this.cols = cols;
+    this.rows = rows;
+    this.horizon = frmTrunc(rows * 0.53);
+
+    // Twinkling night stars above the horizon -- py 430-436
+    const nStars = frmTrunc(cols * rows * 0.038);
+    this.nStars = nStars;
+    this.starR = rng.integers(0, this.horizon + 4, nStars);
+    this.starC = rng.integers(0, cols, nStars);
+    this.starCh = rng.choice([43, 42, 46], nStars, { p: [0.45, 0.30, 0.25] });
+    const starPh = rng.random(nStars);
+    this.starPhase = new Float32Array(nStars);
+    for (let i = 0; i < nStars; i++) this.starPhase[i] = starPh[i] * TAU;
+    this.starSpeed = rng.uniform(1.2, 3.2, nStars);
+
+    // Falling snowflakes across full sky + ground -- py 438-445
+    const nSnow = 115;
+    this.nSnow = nSnow;
+    this.snowX0 = rng.uniform(0.0, cols, nSnow);
+    this.snowY0 = rng.uniform(0.0, rows, nSnow);
+    this.snowVy = rng.uniform(2.2, 5.4, nSnow);
+    this.snowVx = rng.uniform(-0.8, 0.8, nSnow);
+    const snowPh = rng.random(nSnow);
+    this.snowPhase = new Float32Array(nSnow);
+    for (let i = 0; i < nSnow; i++) this.snowPhase[i] = snowPh[i] * TAU;
+    this.snowCh = rng.choice([43, 42, 46], nSnow, { p: [0.35, 0.45, 0.20] });
+
+    // Perspective ground grid -- py 447-455. np.meshgrid(gx, gz) with C-order ravel
+    // walks x fastest, so index k = i*NGX + j holds gx[j] / gz[i].
+    const NGX = 130, NGZ = 110;
+    const gxStep = (4.2 - -4.2) / (NGX - 1);
+    const gzStep = (5.4 - -2.6) / (NGZ - 1);
+    const nGround = NGX * NGZ;
+    const jitterX = rng.uniform(-0.025, 0.025, nGround);
+    const jitterZ = rng.uniform(-0.025, 0.025, nGround);
+    this.nGround = nGround;
+    this.groundPts = new Float32Array(nGround * 3);
+    for (let i = 0; i < NGZ; i++) {
+      const zVal = -2.6 + gzStep * i;
+      for (let j = 0; j < NGX; j++) {
+        const k = i * NGX + j, o = k * 3;
+        this.groundPts[o] = -4.2 + gxStep * j + jitterX[k];
+        this.groundPts[o + 1] = GROUND;
+        this.groundPts[o + 2] = zVal + jitterZ[k];
+      }
+    }
+
+    // Scratch buffers reused by stepFrame (no per-frame allocation of these).
+    this._posBuf = null;
+    this._idxBuf = null;
+    this._depthBuf = null;
+    this._winBuf = null;
+    this._depthCells = -1;
+  }
+
+  // py 457-487
+  paint(char, col, t, rot, aspect) {
+    if (aspect === undefined) aspect = CW / CH;
+    const cols = this.cols, rows = this.rows, horizon = this.horizon;
+
+    // 1. Perspective ground plane (rot * 0.35)
+    const g = project(this.groundPts, rot * 0.35, cols, rows, aspect);
+    const nGround = this.nGround;
+    for (let k = 0; k < nGround; k++) {
+      const gz = g.zp[k];
+      if (!(gz > 0.6)) continue;
+      const ix = frmRound(g.sx[k]);
+      const iy = frmRound(g.sy[k]);
+      if (iy < horizon || iy >= rows || ix < 0 || ix >= cols) continue;
+      const depthFade = frameClamp(1.30 - gz / 8.5, 0.16, 0.62);
+      const cell = iy * cols + ix;
+      char[cell] = depthFade > 0.40 ? 45 : 46; // '-' : '.'
+      const o = cell * 3;
+      col[o] = 0.55 * depthFade;
+      col[o + 1] = 0.62 * depthFade;
+      col[o + 2] = 0.78 * depthFade;
+    }
+
+    // 2. Night stars (avoid the top-right timer HUD zone)
+    const nStars = this.nStars;
+    for (let i = 0; i < nStars; i++) {
+      const r = this.starR[i];
+      if (!(r < horizon)) continue;
+      const c = this.starC[i];
+      if (r < 4 && c >= cols - 16) continue;
+      const tw = 0.35 + 0.65 * (0.5 + 0.5 * frmSin(t * this.starSpeed[i] + this.starPhase[i]));
+      const cell = r * cols + c;
+      char[cell] = this.starCh[i];
+      const o = cell * 3;
+      col[o] = 0.78 * tw;
+      col[o + 1] = 0.85 * tw;
+      col[o + 2] = 0.98 * tw;
+    }
+
+    // 3. Falling snowflakes (keep the HUD corners clean)
+    const nSnow = this.nSnow;
+    for (let i = 0; i < nSnow; i++) {
+      const ph = this.snowPhase[i];
+      let sx = frmRound(frameMod(this.snowX0[i] + this.snowVx[i] * t + 0.8 * frmSin(t * 1.1 + ph), cols));
+      let sy = frmRound(frameMod(this.snowY0[i] + this.snowVy[i] * t, rows));
+      sx = sx < 0 ? 0 : (sx > cols - 1 ? cols - 1 : sx);
+      sy = sy < 0 ? 0 : (sy > rows - 1 ? rows - 1 : sy);
+      if (sy < 4 && sx >= cols - 16) continue;
+      const fade = 0.60 + 0.40 * frmSin(t * 2.5 + ph);
+      const cell = sy * cols + sx;
+      char[cell] = this.snowCh[i];
+      const o = cell * 3;
+      col[o] = 0.86 * fade;
+      col[o + 1] = 0.92 * fade;
+      col[o + 2] = 1.00 * fade;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// star() -- py 490-547 (exported as drawStar)
+// ---------------------------------------------------------------------------
+
+function drawStar(char, col, rows, cols, cx, cy, size, t, power, aspect, flash) {
+  if (flash === undefined) flash = 0.0;
+
+  const tintR = GOLD[0] + (1.0 - GOLD[0]) * flash;
+  const tintG = GOLD[1] + (1.0 - GOLD[1]) * flash;
+  const tintB = GOLD[2] + (1.0 - GOLD[2]) * flash;
+  power = power * (1.0 + 1.6 * flash);
+
+  // Thin rays first, then a filled five-pointed star on top.
+  const RAY_CH = "-|/\\";
+  for (let k = 0; k < 8; k++) {
+    const ang = k * TAU / 8.0 + 0.10 * frmSin(t * 0.7);
+    const sang = frmSin(ang);
+    if (sang < -0.2) continue; // no rays down into the tree
+    const horiz = frmAbs(sang) < 0.25 ? 0.55 : 1.0;
+    const reach = size * (2.6 + 0.6 * frmSin(t * 3.0 + k * 1.3))
+      * (k % 2 === 0 ? 1.0 : 0.75) * horiz * (1.0 + 1.6 * flash);
+    const chIdx = frmRound(frameMod(frameDegrees(ang), 180.0) / 45.0) % 4;
+    const ch = RAY_CH.charCodeAt(chIdx);
+    const cosA = frmCos(ang);
+    const start = size * 1.15;
+    const steps = frmMax(0, frmCeil((reach - start) / 0.5)); // np.arange(start, reach, 0.5)
+    for (let si = 0; si < steps; si++) {
+      const s = start + si * 0.5;
+      const y = frmRound(cy - sang * s);
+      const x = frmRound(cx + cosA * s / aspect);
+      if (y < 0 || y >= rows || x < 0 || x >= cols) continue;
+      const o = (y * cols + x) * 3;
+      if (frmMax(col[o], col[o + 1], col[o + 2]) >= 0.75) continue;
+      const fade = frmMax(0.0, 1.0 - s / reach) * horiz;
+      char[y * cols + x] = ch;
+      const m = power * 0.65 * fade;
+      col[o] = tintR * m;
+      col[o + 1] = tintG * m;
+      col[o + 2] = tintB * m;
+    }
+  }
+
+  // Filled 5-pointed star polygon
+  const verts = [];
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2.0 + i * TAU / 10.0;
+    const r = (i % 2 === 0) ? size : size * 0.42;
+    verts.push([cx + frmCos(a) * r / aspect, cy + frmSin(a) * r]);
+  }
+
+  const y0 = frmMax(0, frmFloor(cy - size - 1));
+  const y1 = frmMin(rows, frmCeil(cy + size + 2));
+  const x0 = frmMax(0, frmFloor(cx - size / aspect - 1));
+  const x1 = frmMin(cols, frmCeil(cx + size / aspect + 2));
+  if (y1 <= y0 || x1 <= x0) return;
+
+  const w = x1 - x0, h = y1 - y0;
+  const px = new Float32Array(w * h);
+  const py = new Float32Array(w * h);
+  for (let iy = 0; iy < h; iy++) {
+    for (let ix = 0; ix < w; ix++) {
+      const idx = iy * w + ix;
+      px[idx] = x0 + ix;
+      py[idx] = y0 + iy;
+    }
+  }
+  const inside = pointInPoly(px, py, verts);
+  const cm = frmMin(1.35, power);
+
+  for (let iy = 0; iy < h; iy++) {
+    for (let ix = 0; ix < w; ix++) {
+      const idx = iy * w + ix;
+      if (!inside[idx]) continue;
+      const gx = x0 + ix, gy = y0 + iy;
+      const dist = frmHypot((gx - cx) * aspect, gy - cy) / frmMax(size, 0.5);
+      const cell = gy * cols + gx;
+      char[cell] = dist < 0.52 ? 64 : 35; // '@' core, '#' mid
+      const o = cell * 3;
+      col[o] = tintR * cm;
+      col[o + 1] = tintG * cm;
+      col[o + 2] = tintB * cm;
+    }
+  }
+
+  // Crisp outer tips (verts[::2])
+  for (let i = 0; i < 10; i += 2) {
+    const ix = frmRound(verts[i][0]);
+    const iy = frmRound(verts[i][1]);
+    if (iy < 0 || iy >= rows || ix < 0 || ix >= cols) continue;
+    const cell = iy * cols + ix;
+    char[cell] = 42; // '*'
+    const o = cell * 3;
+    col[o] = tintR * cm;
+    col[o + 1] = tintG * cm;
+    col[o + 2] = tintB * cm;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// put() -- py 550-553 (exported as putChar)
+// ---------------------------------------------------------------------------
+
+function putChar(char, col, rows, cols, r, c, ch, tint, lum) {
+  if (r < 0 || r >= rows || c < 0 || c >= cols) return;
+  const cell = r * cols + c;
+  char[cell] = (typeof ch === 'number') ? ch : ch.charCodeAt(0);
+  const o = cell * 3;
+  col[o] = frameClamp(tint[0] * lum, 0.0, 1.0);
+  col[o + 1] = frameClamp(tint[1] * lum, 0.0, 1.0);
+  col[o + 2] = frameClamp(tint[2] * lum, 0.0, 1.0);
+}
+
+// ---------------------------------------------------------------------------
+// step_frame() -- py 556-674
+// ---------------------------------------------------------------------------
+
+const STAR_ORIGIN = new Float32Array(3); // [0, Y1 + 0.13, 0], set below
+STAR_ORIGIN[0] = 0.0;
+STAR_ORIGIN[1] = Y1 + 0.13;
+STAR_ORIGIN[2] = 0.0;
+
+const MSG_PALETTE = [RED, GOLD, GREEN_BOX];
+
+function stepFrame(scene, bg, t, cols, rows, aspect, message) {
+  if (cols === undefined) cols = COLS;
+  if (rows === undefined) rows = ROWS;
+  if (aspect === undefined) aspect = CW / CH;
+  if (message === undefined) message = DEFAULT_MESSAGE;
+
+  const nCells = rows * cols;
+  const char = new Uint8Array(nCells);
+  const col = new Float32Array(nCells * 3);
+
+  const rot = t * ROT_SPEED;
+  bg.paint(char, col, t, rot, aspect);
+
+  // --- active mask (t >= scene.t0) + pop scaling, gathered into scratch ---
+  const n = scene.n;
+  const sPos = scene.pos, sNrm = scene.nrm, sCol = scene.col, sKind = scene.kind;
+  const sT0 = scene.t0, sBase = scene.base, sCentre = scene.centre;
+  const sPhase = scene.phase, sPop = scene.pop;
+
+  let posBuf = bg._posBuf;
+  if (!posBuf || posBuf.length < n * 3) posBuf = bg._posBuf = new Float32Array(n * 3);
+  let idxBuf = bg._idxBuf;
+  if (!idxBuf || idxBuf.length < n) idxBuf = bg._idxBuf = new Int32Array(n);
+
+  let m = 0;
+  let lightCount = 0;
+  for (let i = 0; i < n; i++) {
+    if (t < sT0[i]) continue;
+    const j3 = i * 3;
+    let x = sPos[j3], y = sPos[j3 + 1], z = sPos[j3 + 2];
+    if (sPop[i]) {
+      // smooth(age / 0.35), then pos = centre + (pos - centre) * s
+      let u = (t - sT0[i]) / 0.35;
+      u = u < 0.0 ? 0.0 : (u > 1.0 ? 1.0 : u);
+      const sp = u * u * (3.0 - 2.0 * u);
+      const cx = sCentre[j3], cy = sCentre[j3 + 1], cz = sCentre[j3 + 2];
+      x = cx + (x - cx) * sp;
+      y = cy + (y - cy) * sp;
+      z = cz + (z - cz) * sp;
+    }
+    const o3 = m * 3;
+    posBuf[o3] = x;
+    posBuf[o3 + 1] = y;
+    posBuf[o3 + 2] = z;
+    idxBuf[m] = i;
+    if (sKind[i] === LIGHT) lightCount++;
+    m++;
+  }
+
+  const pr = project(posBuf.subarray(0, m * 3), rot, cols, rows, aspect);
+  const sx = pr.sx, sy = pr.sy, zp = pr.zp;
+
+  // --- Z-buffer: nearest (smallest zp) wins, ties by earlier index ---
+  if (bg._depthCells !== nCells) {
+    bg._depthBuf = new Float32Array(nCells);
+    bg._winBuf = new Int32Array(nCells);
+    bg._depthCells = nCells;
+  }
+  const depth = bg._depthBuf, winner = bg._winBuf;
+  depth.fill(Infinity);
+  winner.fill(-1);
+
+  for (let j = 0; j < m; j++) {
+    const zj = zp[j];
+    if (!(zj > 0.5)) continue;
+    const ix = frmRound(sx[j]);
+    const iy = frmRound(sy[j]);
+    if (ix < 0 || ix >= cols || iy < 0 || iy >= rows) continue;
+    const cell = iy * cols + ix;
+    if (zj < depth[cell]) {
+      depth[cell] = zj;
+      winner[cell] = j;
+    }
+  }
+
+  // --- Resolve winners: lighting, per-kind luminance, frost flash, glyph ramp ---
+  const ca = frmCos(rot), sa = frmSin(rot);
+  const LD0 = 0.42, LD1 = 0.56, LD2 = -0.71;
+  const rampMax = RAMP_ARR.length - 1;
+
+  for (let cell = 0; cell < nCells; cell++) {
+    const j = winner[cell];
+    if (j < 0) continue;
+    const i = idxBuf[j];
+    const j3 = i * 3;
+
+    // rotate normals into view space for lighting
+    const nX = sNrm[j3], nY = sNrm[j3 + 1], nZ = sNrm[j3 + 2];
+    const vx = nX * ca - nZ * sa;
+    const vy = nY;
+    const vz = nX * sa + nZ * ca;
+    const ndotl = frameClamp(vx * LD0 + vy * LD1 + vz * LD2, 0.0, 1.0);
+
+    const kind = sKind[i];
+    const base = sBase[i];
+    const phase = sPhase[i];
+
+    let lum = base * (0.28 + 0.72 * ndotl);
+    if (kind === CONE) lum = base * (0.18 + 0.25 * ndotl);
+    else if (kind === SNOW) lum = 0.72 + 0.28 * ndotl;
+    else if (kind === TINSEL) lum = 0.65 + 0.35 * frmSin(t * 4.5 + phase) * 0.5 + 0.35 * ndotl;
+    else if (kind === BALL) lum = 0.38 + 0.62 * frmPow(ndotl, 1.3);
+    else if (kind === GIFT) lum = 0.42 + 0.58 * ndotl;
+    else if (kind === RIBBON) lum = 0.62 + 0.38 * ndotl;
+
+    // Twinkling fairy lights
+    if (kind === LIGHT) {
+      const twinkle = 0.55 + 0.45 * frmSin(t * 6.0 + phase);
+      lum = 0.55 + 0.65 * twinkle;
+    }
+
+    const age = t - sT0[i];
+
+    // Growth frontier frost-white flash as points appear
+    let flashW = 0.0;
+    if (kind === NEEDLE || kind === SNOW || kind === TRUNK) {
+      flashW = frameClamp(1.0 - age / 0.38, 0.0, 1.0);
+    }
+    const cr = sCol[j3], cg = sCol[j3 + 1], cb = sCol[j3 + 2];
+    const f85 = 0.85 * flashW;
+    let rgbR = cr * (1.0 - f85) + WHITE[0] * f85;
+    let rgbG = cg * (1.0 - f85) + WHITE[1] * f85;
+    let rgbB = cb * (1.0 - f85) + WHITE[2] * f85;
+    const lumFlash = 1.05 * flashW;
+    if (lumFlash > lum) lum = lumFlash;
+
+    const wLum = frameClamp(lum, 0.0, 1.0);
+    const lumScale = frameClamp(lum, 0.12, 1.2);
+    rgbR = frameClamp(rgbR * lumScale, 0.0, 1.0);
+    rgbG = frameClamp(rgbG * lumScale, 0.0, 1.0);
+    rgbB = frameClamp(rgbB * lumScale, 0.0, 1.0);
+
+    let ridx = frmTrunc(wLum * rampMax);
+    if (ridx < 1) ridx = 1; else if (ridx > rampMax) ridx = rampMax;
+    let chv = RAMP_ARR[ridx];
+    if (kind === LIGHT) chv = 64;                                  // '@'
+    else if (kind === GIFT) chv = wLum > 0.65 ? 35 : 37;           // '#' : '%'
+    else if (kind === RIBBON) chv = 64;                            // '@'
+
+    char[cell] = chv;
+    const o = cell * 3;
+    col[o] = rgbR;
+    col[o + 1] = rgbG;
+    col[o + 2] = rgbB;
+  }
+
+  // --- Top star: dim silhouette before T_STAR, then bursts white and settles gold ---
+  const tp = project(STAR_ORIGIN, rot, cols, rows, aspect);
+  if (t >= T_GROW[1] - 0.5) {
+    let on = 0.0, flash = 0.0;
+    if (t >= T_STAR) {
+      let u = (t - T_STAR) / 0.3;
+      u = u < 0.0 ? 0.0 : (u > 1.0 ? 1.0 : u);
+      on = u * u * (3.0 - 2.0 * u);
+      const f = frameClamp(1.0 - (t - T_STAR) / 1.0, 0.0, 1.0);
+      flash = f * f;
+    }
+    const power = 0.25 + 0.85 * on;
+    const starSz = (1.6 + 1.5 * on) * (1.0 + 0.05 * frmSin(t * 3.0));
+    drawStar(char, col, rows, cols, frmRound(tp.sx[0]), frmRound(tp.sy[0]),
+      starSz, t, power, aspect, flash);
+  }
+
+  // --- Typed holiday message near the bottom ---
+  if (t > T_MSG && message) {
+    const row = rows - 9;
+    let x0 = frmTrunc((cols - message.length) / 2);
+    if (x0 < 0) x0 = 0;
+    let shown = frmTrunc((t - T_MSG) * 10.0);
+    if (shown > message.length) shown = message.length;
+    if (shown < 0) shown = 0;
+
+    // clear char rows row-1..row+1 (char only, not col)
+    const r0 = row - 1, r1 = row + 2;
+    const c0 = frmMax(x0 - 3, 0);
+    const c1 = frmMin(cols, x0 + shown + 3);
+    for (let rr = r0; rr < r1; rr++) {
+      if (rr < 0 || rr >= rows) continue;
+      for (let cc = c0; cc < c1; cc++) {
+        if (cc < 0 || cc >= cols) continue;
+        char[rr * cols + cc] = 0;
+      }
+    }
+
+    const tSel = frmTrunc(t * 1.5);
+    for (let i = 0; i < shown; i++) {
+      const ch = message.charAt(i);
+      if (ch !== " ") {
+        const tint = MSG_PALETTE[(frmFloor(i / 2) + tSel) % 3];
+        putChar(char, col, rows, cols, row, x0 + i, ch, tint,
+          0.85 + 0.25 * frmSin(t * 5.0 + i));
+      }
+    }
+  }
+
+  let letters = 0;
+  for (let i = 0; i < nCells; i++) if (char[i] > 0) letters++;
+
+  const info = {
+    rotation_deg: frameMod(frameDegrees(rot), 360.0),
+    lights: frmFloor(lightCount / 16),
+    letters: letters
+  };
+  return { char: char, col: col, info: info };
+}
+
+
+/* ===================== audio.js ===================== */
+// audio.js — offline procedural festive soundtrack synthesis.
+// Faithful port of christmas_tree.py constants 108-118 and synth code 785-1128.
+// No DOM, no timers, no randomness beyond makeRng (defined earlier in scene.js).
+
+// Audio synthesis constants (Python lines 108-118)
+var SAMPLE_RATE = 44100;
+// Lexical alias: hot sample loops read it without a global-object lookup.
+const AUDIO_SR = SAMPLE_RATE;
+
+var NOTE_MAP = {
+  "A1": 55.00, "B1": 61.74,
+  "C#2": 69.30, "D2": 73.42, "E2": 82.41, "F#2": 92.50, "G2": 98.00, "A2": 110.00, "B2": 123.47,
+  "C3": 130.81, "C#3": 138.59, "D3": 146.83, "E3": 164.81, "F3": 174.61, "F#3": 185.00, "G3": 196.00, "A3": 220.00, "B3": 246.94,
+  "C4": 261.63, "C#4": 277.18, "D4": 293.66, "E4": 329.63, "F4": 349.23, "F#4": 369.99, "G4": 392.00, "A4": 440.00, "Bb4": 466.16, "B4": 493.88,
+  "C5": 523.25, "C#5": 554.37, "D5": 587.33, "E5": 659.25, "F5": 698.46, "F#5": 739.99, "G5": 783.99, "A5": 880.00, "B5": 987.77,
+  "C6": 1046.50, "C#6": 1108.73, "D6": 1174.66, "E6": 1318.51, "F#6": 1479.98, "G6": 1567.98, "A6": 1760.00,
+};
+
+// ---------------------------------------------------------------------------
+// Voices (Python 785-892). Mono Float32Array except _juno_pad_chord (stereo).
+// ---------------------------------------------------------------------------
+
+function _bell_voice(freq, dur, amp) {
+  if (amp === undefined) amp = 0.25;
+  const n = Math.max(1, Math.trunc(dur * AUDIO_SR));
+  const out = new Float32Array(n);
+  const sin = Math.sin, exp = Math.exp;
+  const w = 2.0 * Math.PI * freq;
+  for (let i = 0; i < n; i++) {
+    const t = i / AUDIO_SR;
+    let atk = t / 0.006;
+    if (atk > 1.0) atk = 1.0;
+    const env1 = atk * exp(-t * 3.1);
+    const env2 = atk * exp(-t * 6.5);
+    const env3 = atk * exp(-t * 11.0);
+    const sig =
+      0.65 * sin(w * t) * env1 +
+      0.24 * sin(w * 2.0 * t) * env2 +
+      0.11 * sin(w * 3.0 * t) * env3 +
+      0.05 * sin(w * 4.02 * t) * env3;
+    out[i] = sig * amp;
+  }
+  return out;
+}
+
+function _synth_lead_voice(freq, dur, amp) {
+  if (amp === undefined) amp = 0.24;
+  const tail = 0.22;
+  const total_dur = dur + tail;
+  const n = Math.max(1, Math.trunc(total_dur * AUDIO_SR));
+  const out = new Float32Array(n);
+  const sin = Math.sin, exp = Math.exp;
+  const twoPiF = 2.0 * Math.PI * freq;
+  const twoPiVib = 2.0 * Math.PI * 5.4;
+  const decay_rate = 0.95 / Math.max(dur, 0.35);
+  let cum = 0.0;  // np.cumsum(vib)
+  for (let i = 0; i < n; i++) {
+    const t = i / AUDIO_SR;
+    let atk = t / 0.010;
+    if (atk > 1.0) atk = 1.0;
+    const hold = t <= dur ? 1.0 : exp(-(t - dur) / 0.075);
+    const decay = exp(-t * decay_rate);
+    const env = atk * hold * decay;
+
+    let vpos = (t - 0.18) / 0.25;
+    if (vpos < 0.0) vpos = 0.0; else if (vpos > 1.0) vpos = 1.0;
+    const vib = 0.003 * vpos * sin(twoPiVib * t);
+    cum += vib;
+    const phase = twoPiF * (t + cum / AUDIO_SR);
+
+    const chime = exp(-t * 11.0);
+    const sig =
+      0.58 * sin(phase) +
+      0.24 * sin(2.0 * phase) * (0.55 + 0.45 * exp(-t * 4.0)) +
+      0.10 * sin(3.0 * phase) * exp(-t * 6.0) +
+      0.08 * sin(4.0 * phase) * chime;
+    out[i] = sig * env * amp;
+  }
+  return out;
+}
+
+function _synth_bass_voice(freq, dur, amp) {
+  if (dur === undefined) dur = 0.23;
+  if (amp === undefined) amp = 0.21;
+  const n = Math.max(1, Math.trunc(dur * AUDIO_SR));
+  const out = new Float32Array(n);
+  const sin = Math.sin, exp = Math.exp;
+  const w = 2.0 * Math.PI * freq;
+  for (let i = 0; i < n; i++) {
+    const t = i / AUDIO_SR;
+    let atk = t / 0.004;
+    if (atk > 1.0) atk = 1.0;
+    const env = atk * exp(-t * 11.5);
+    const bright_env = atk * exp(-t * 22.0);
+    const sig =
+      0.66 * sin(w * t) * env +
+      0.26 * sin(w * 2.0 * t) * bright_env +
+      0.11 * sin(w * 3.0 * t) * bright_env;
+    out[i] = sig * amp;
+  }
+  return out;
+}
+
+function _pad_chord(freqs, dur, amp) {
+  if (amp === undefined) amp = 0.08;
+  const n = Math.max(1, Math.trunc(dur * AUDIO_SR));
+  const sig = new Float32Array(n);
+  const env = new Float32Array(n);
+  const sin = Math.sin;
+  for (let i = 0; i < n; i++) {
+    const t = i / AUDIO_SR;
+    let fi = t / 0.45; if (fi > 1.0) fi = 1.0;
+    let fo = (dur - t) / 0.55; if (fo > 1.0) fo = 1.0;
+    let e = fi * fo;
+    if (e < 0.0) e = 0.0; else if (e > 1.0) e = 1.0;
+    env[i] = e;
+  }
+  for (let k = 0; k < freqs.length; k++) {
+    const f = freqs[k];
+    const w = 2.0 * Math.PI * f;
+    const w2 = 2.0 * Math.PI * (f * 1.003);
+    for (let i = 0; i < n; i++) {
+      const t = i / AUDIO_SR;
+      sig[i] += sin(w * t) + 0.28 * sin(w * 2.0 * t);
+      sig[i] += 0.15 * sin(w2 * t);
+    }
+  }
+  const nf = Math.max(1, freqs.length);
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) out[i] = (sig[i] / nf) * env[i] * amp;
+  return out;
+}
+
+function _juno_pad_chord(freqs, dur, amp) {
+  // Stereo chorus-detuned 80s synth pad (Python 853-870).
+  if (amp === undefined) amp = 0.11;
+  const n = Math.max(1, Math.trunc(dur * AUDIO_SR));
+  const left = new Float32Array(n);
+  const right = new Float32Array(n);
+  const env = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const t = i / AUDIO_SR;
+    let fi = t / 0.28; if (fi > 1.0) fi = 1.0;
+    let fo = (dur - t) / 0.35; if (fo > 1.0) fo = 1.0;
+    let e = fi * fo;
+    if (e < 0.0) e = 0.0; else if (e > 1.0) e = 1.0;
+    env[i] = e;
+  }
+  const detune = [0.9972, 1.0028];
+  const weights = [1.0, 0.38, 0.18, 0.09, 0.04];
+  const sin = Math.sin;
+  for (let k = 0; k < freqs.length; k++) {
+    const f = freqs[k];
+    for (let ch = 0; ch < 2; ch++) {
+      const f_d = f * detune[ch];
+      const dst = ch === 0 ? left : right;
+      for (let h = 0; h < 5; h++) {
+        const w = 2.0 * Math.PI * (f_d * (h + 1));
+        const wt = weights[h];
+        for (let i = 0; i < n; i++) dst[i] += wt * sin(w * (i / AUDIO_SR));
+      }
+    }
+  }
+  const nf = Math.max(1, freqs.length);
+  for (let i = 0; i < n; i++) {
+    const e = env[i] * amp;
+    left[i] = (left[i] / nf) * e;
+    right[i] = (right[i] / nf) * e;
+  }
+  return { l: left, r: right };
+}
+
+function _pop_kick(amp) {
+  if (amp === undefined) amp = 0.22;
+  const dur = 0.28;
+  const n = Math.trunc(dur * AUDIO_SR);
+  const out = new Float32Array(n);
+  const sin = Math.sin, exp = Math.exp;
+  const twoPi = 2.0 * Math.PI;
+  let cum = 0.0;  // np.cumsum(freq)
+  for (let i = 0; i < n; i++) {
+    const t = i / AUDIO_SR;
+    const freq = 44.0 + 78.0 * exp(-t * 32.0);
+    cum += freq;
+    const phase = twoPi * cum / AUDIO_SR;
+    let atk = t / 0.002;
+    if (atk > 1.0) atk = 1.0;
+    const env = atk * exp(-t * 11.0);
+    out[i] = sin(phase) * env * amp;
+  }
+  return out;
+}
+
+// In-place iterative radix-2 complex FFT (n a power of two). add/sub butterflies.
+function _fftRadix2(re, im, n, inverse) {
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) {
+      let tr = re[i]; re[i] = re[j]; re[j] = tr;
+      let ti = im[i]; im[i] = im[j]; im[j] = ti;
+    }
+  }
+  for (let size = 2; size <= n; size <<= 1) {
+    const half = size >> 1;
+    const ang = (inverse ? 2.0 : -2.0) * Math.PI / size;
+    const wr0 = Math.cos(ang), wi0 = Math.sin(ang);
+    for (let base = 0; base < n; base += size) {
+      let wr = 1.0, wi = 0.0;
+      for (let j = 0; j < half; j++) {
+        const a = base + j, b = a + half;
+        const vr = re[b] * wr - im[b] * wi;
+        const vi = re[b] * wi + im[b] * wr;
+        re[b] = re[a] - vr; im[b] = im[a] - vi;
+        re[a] += vr; im[a] += vi;
+        const nwr = wr * wr0 - wi * wi0;
+        wi = wr * wi0 + wi * wr0;
+        wr = nwr;
+      }
+    }
+  }
+  if (inverse) {
+    const inv = 1.0 / n;
+    for (let i = 0; i < n; i++) { re[i] *= inv; im[i] *= inv; }
+  }
+}
+
+function _snare_80s(rng, amp) {
+  // Python 882-892 uses np.fft band-pass. JS has no FFT, so: zero-pad the
+  // 9702-sample noise block to 16384, run a radix-2 FFT, apply the same
+  // 900..7200 Hz mask (0.12 outside) on the positive bins, give each negative
+  // bin the same real gain as its positive mirror (conjugate symmetry, so the
+  // result stays real), and inverse-FFT with numpy's 1/N normalisation; keep
+  // the first 9702 samples. No extra gain compensation: numpy's irfft uses
+  // the same 1/N form.
+  if (amp === undefined) amp = 0.13;
+  const dur = 0.22;
+  const n = Math.trunc(dur * AUDIO_SR);
+  const N = 16384;
+  const re = new Float64Array(N), im = new Float64Array(N);
+  const noise = rng.normal(0.0, 1.0, n);
+  for (let i = 0; i < n; i++) re[i] = noise[i];
+  _fftRadix2(re, im, N, false);
+  const halfN = N >> 1;
+  for (let k = 0; k <= halfN; k++) {
+    const f = k * AUDIO_SR / N;
+    const g = (f >= 900.0 && f <= 7200.0) ? 1.0 : 0.12;
+    re[k] *= g; im[k] *= g;
+    if (k > 0 && k < halfN) { re[N - k] *= g; im[N - k] *= g; }
+  }
+  _fftRadix2(re, im, N, true);
+
+  const out = new Float32Array(n);
+  const sin = Math.sin, exp = Math.exp;
+  const twoPi = 2.0 * Math.PI;
+  const gate_decay = exp(-0.12 * 7.5);
+  for (let i = 0; i < n; i++) {
+    const t = i / AUDIO_SR;
+    const body = sin(twoPi * (185.0 * exp(-t * 15.0) + 125.0) * t) * exp(-t * 24.0);
+    const gated = t < 0.12 ? exp(-t * 7.5) : gate_decay * exp(-(t - 0.12) * 32.0);
+    out[i] = (0.75 * re[i] * gated + 0.35 * body) * amp;
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Mixer helpers (Python 895-937). buf = { l: Float32Array, r: Float32Array }.
+// ---------------------------------------------------------------------------
+
+function _add_stereo(buf, start_s, mono, pan) {
+  if (pan === undefined) pan = 0.0;
+  const nb = buf.l.length;
+  const i0 = Math.trunc(start_s * AUDIO_SR);
+  if (i0 >= nb || i0 + mono.length <= 0) return;
+  const src_start = Math.max(0, -i0);
+  const dst_start = Math.max(0, i0);
+  const length = Math.min(mono.length - src_start, nb - dst_start);
+  if (length <= 0) return;
+  let p = pan;
+  if (p < -1.0) p = -1.0; else if (p > 1.0) p = 1.0;
+  const l_gain = Math.sqrt(0.5 * (1.0 - p));
+  const r_gain = Math.sqrt(0.5 * (1.0 + p));
+  for (let j = 0; j < length; j++) {
+    const v = mono[src_start + j];
+    buf.l[dst_start + j] += v * l_gain;
+    buf.r[dst_start + j] += v * r_gain;
+  }
+}
+
+function _add_stereo_pair(buf, start_s, stereo) {
+  const nb = buf.l.length;
+  const i0 = Math.trunc(start_s * AUDIO_SR);
+  if (i0 >= nb || i0 + stereo.l.length <= 0) return;
+  const src_start = Math.max(0, -i0);
+  const dst_start = Math.max(0, i0);
+  const length = Math.min(stereo.l.length - src_start, nb - dst_start);
+  if (length <= 0) return;
+  for (let j = 0; j < length; j++) {
+    buf.l[dst_start + j] += stereo.l[src_start + j];
+    buf.r[dst_start + j] += stereo.r[src_start + j];
+  }
+}
+
+function _apply_reverb(buf) {
+  // Taps read from the dry input for every tap (not the accumulating copy).
+  const n = buf.l.length;
+  const out = { l: buf.l.slice(), r: buf.r.slice() };
+  const taps = [
+    [Math.trunc(0.037 * AUDIO_SR), 0.25, 0.14],
+    [Math.trunc(0.061 * AUDIO_SR), 0.16, 0.23],
+    [Math.trunc(0.097 * AUDIO_SR), 0.17, 0.11],
+    [Math.trunc(0.149 * AUDIO_SR), 0.09, 0.15],
+  ];
+  for (let k = 0; k < taps.length; k++) {
+    const delay = taps[k][0], g_same = taps[k][1], g_cross = taps[k][2];
+    if (delay >= n) continue;
+    for (let i = 0; i < n - delay; i++) {
+      out.l[delay + i] += buf.l[i] * g_same + buf.r[i] * g_cross;
+      out.r[delay + i] += buf.r[i] * g_same + buf.l[i] * g_cross;
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Arrangements (Python 940-1090)
+// ---------------------------------------------------------------------------
+
+function _render_last_christmas(buf, duration, star_time) {
+  // 80s synth-pop + chime in D major at 108 BPM (D -> Bm -> Em -> A).
+  const beat = 60.0 / 108.0;
+  const bar = 4.0 * beat;
+  const rng = makeRng(1984);
+
+  const chords = [
+    [0.0, bar + 0.15, ["D3", "F#3", "A3", "C#4"]],
+    [1 * bar, 2 * bar + 0.15, ["D3", "F#3", "A3", "C#4"]],
+    [3 * bar, 2 * bar + 0.15, ["B2", "D3", "F#3", "A3"]],
+    [5 * bar, 2 * bar + 0.15, ["E3", "G3", "B3", "D4"]],
+    [7 * bar, 1.5 * bar + 0.1, ["A2", "D3", "E3", "G3"]],
+    [8.5 * bar, 0.25 * bar + 0.1, ["A2", "C#3", "E3", "G3"]],
+    [8.75 * bar, Math.max(0.5, duration - 8.75 * bar), ["D3", "F#3", "A3", "E4"]],
+  ];
+  for (let ci = 0; ci < chords.length; ci++) {
+    const t0 = chords[ci][0], dur_c = chords[ci][1], notes = chords[ci][2];
+    if (t0 >= duration) break;
+    const freqs = [];
+    for (let i = 0; i < notes.length; i++) freqs.push(NOTE_MAP[notes[i]]);
+    const pad = _juno_pad_chord(freqs, Math.min(dur_c, duration - t0 + 0.2), 0.095);
+    _add_stereo_pair(buf, t0, pad);
+  }
+
+  const bass_roots = [
+    [0, 12, "D2", "C#2"],
+    [12, 20, "B1", "F#2"],
+    [20, 28, "E2", "G2"],
+    [28, 34, "A1", "A1"],
+  ];
+  for (let bi = 0; bi < bass_roots.length; bi++) {
+    const b_start = bass_roots[bi][0], b_end = bass_roots[bi][1];
+    const root = bass_roots[bi][2], pickup = bass_roots[bi][3];
+    const total_eighths = (b_end - b_start) * 2;
+    for (let e = 0; e < total_eighths; e++) {
+      const t_e = (b_start + e * 0.5) * beat;
+      if (t_e >= duration - 0.1) break;
+      const note = (e === total_eighths - 1 && b_end < 34) ? pickup : root;
+      _add_stereo(buf, t_e, _synth_bass_voice(NOTE_MAP[note], 0.21, 0.17), 0.0);
+    }
+  }
+
+  const kick = _pop_kick(0.19);
+  const snare = _snare_80s(rng, 0.075);
+  const n_sleigh = Math.trunc(0.11 * AUDIO_SR);
+  const sleigh = new Float32Array(n_sleigh);
+  const sleigh_noise = rng.normal(0.0, 1.0, n_sleigh);
+  const sin = Math.sin, exp = Math.exp;
+  const w_sleigh = 2.0 * Math.PI * 6400.0;
+  for (let i = 0; i < n_sleigh; i++) {
+    const t = i / AUDIO_SR;
+    sleigh[i] = sleigh_noise[i] * sin(w_sleigh * t) * exp(-t * 32.0) * 0.032;
+  }
+  const sleigh_half = new Float32Array(n_sleigh);
+  for (let i = 0; i < n_sleigh; i++) sleigh_half[i] = sleigh[i] * 0.65;
+
+  const total_beats = Math.trunc(duration / beat);
+  for (let b = 0; b < total_beats; b++) {
+    const tb = b * beat;
+    if (b < 35) {
+      if (b % 2 === 0) {
+        _add_stereo(buf, tb, kick, 0.0);
+      } else {
+        _add_stereo(buf, tb, snare, 0.04);
+      }
+      _add_stereo(buf, tb, sleigh, 0.25);
+      if (tb + 0.5 * beat < duration - 0.15) {
+        _add_stereo(buf, tb + 0.5 * beat, sleigh_half, -0.25);
+      }
+    }
+  }
+
+  const bell_notes = ["D5", "F#5", "A5", "C#6", "A5", "F#5"];
+  for (let i = 0; i < bell_notes.length; i++) {
+    const ti = 0.15 + i * 0.5 * beat;
+    if (ti < duration - 0.2) {
+      _add_stereo(buf, ti, _bell_voice(NOTE_MAP[bell_notes[i]], 0.85, 0.15), -0.35 + 0.14 * i);
+    }
+  }
+
+  const melody = [
+    [4.00, "E5", 1.35], [5.50, "E5", 0.45], [6.00, "D5", 0.85], [7.00, "A4", 0.80],
+    [8.00, "E5", 0.45], [8.50, "E5", 0.45], [9.00, "F#5", 0.80], [10.00, "D5", 1.80],
+    [12.00, "B4", 0.45], [12.50, "B4", 0.45], [13.00, "E5", 0.45], [13.50, "E5", 0.45],
+    [14.00, "F#5", 0.48], [14.50, "D5", 1.30], [16.00, "B4", 0.45], [16.50, "C#5", 0.45],
+    [17.00, "D5", 0.45], [17.50, "C#5", 0.45], [18.00, "B4", 1.80],
+    [20.00, "F#5", 0.90], [21.00, "E5", 1.25], [22.50, "B4", 0.45], [23.00, "F#5", 0.48],
+    [23.50, "G5", 0.48], [24.00, "F#5", 0.48], [24.50, "E5", 2.50],
+    [28.00, "D5", 0.45], [28.50, "C#5", 0.45], [29.00, "D5", 0.45], [29.50, "C#5", 0.45],
+    [30.00, "C#5", 0.48], [30.50, "D5", 0.48], [31.00, "C#5", 0.85], [32.00, "A4", 2.00],
+    [34.50, "D5", 1.45],
+  ];
+  for (let idx = 0; idx < melody.length; idx++) {
+    const b_pos = melody[idx][0], note = melody[idx][1], b_dur = melody[idx][2];
+    const t_note = b_pos * beat;
+    if (t_note >= duration - 0.15) continue;
+    const dur_s = Math.min(b_dur * beat, Math.max(0.15, duration - t_note));
+    const lead = _synth_lead_voice(NOTE_MAP[note], dur_s, 0.28);
+    const bell_layer = _bell_voice(NOTE_MAP[note], Math.max(0.50, dur_s), 0.13);
+    const pan = idx % 2 === 0 ? -0.14 : 0.14;
+    _add_stereo(buf, t_note, lead, pan);
+    _add_stereo(buf, t_note, bell_layer, -pan);
+  }
+
+  if (star_time < duration - 0.2) {
+    const sparkle = ["D5", "F#5", "A5", "C#6", "D6", "E6", "F#6", "A6"];
+    for (let i = 0; i < sparkle.length; i++) {
+      const ti = star_time + i * 0.052;
+      if (ti < duration - 0.15) {
+        _add_stereo(
+          buf,
+          ti,
+          _bell_voice(NOTE_MAP[sparkle[i]], 1.5, 0.13),
+          -0.6 + 1.2 * (i / Math.max(1, sparkle.length - 1))
+        );
+      }
+    }
+  }
+}
+
+function _render_traditional(buf, duration, star_time) {
+  // Traditional "We Wish You a Merry Christmas" music-box & chime arrangement.
+  const chords = [
+    [0.0, 2.6, ["C3", "G3", "C4", "E4"]],
+    [2.5, 2.6, ["F3", "C4", "F4", "A4"]],
+    [5.0, 2.6, ["D3", "A3", "D4", "F#4"]],
+    [7.5, 2.6, ["G3", "B3", "D4", "G4"]],
+    [10.0, 2.0, ["E3", "B3", "E4", "G4"]],
+    [11.8, 2.8, ["F3", "C4", "F4", "A4", "C5"]],
+    [14.5, 2.8, ["G3", "D4", "G4", "B4"]],
+    [17.2, 2.8, ["C3", "G3", "C4", "E4", "G4"]],
+  ];
+  for (let ci = 0; ci < chords.length; ci++) {
+    const t0 = chords[ci][0], dur_c = chords[ci][1], notes = chords[ci][2];
+    const freqs = [];
+    for (let i = 0; i < notes.length; i++) freqs.push(NOTE_MAP[notes[i]]);
+    const pad = _pad_chord(freqs, dur_c, 0.10);
+    _add_stereo(buf, t0, pad, 0.0);
+  }
+
+  const beat = 0.44;
+  const melody = [
+    [0.4, "D4", 1.0], [0.4 + beat, "G4", 1.0], [0.4 + 2 * beat, "G4", 0.5], [0.4 + 2.5 * beat, "A4", 0.5],
+    [0.4 + 3 * beat, "G4", 0.5], [0.4 + 3.5 * beat, "F#4", 0.5], [0.4 + 4 * beat, "E4", 1.0], [0.4 + 5 * beat, "E4", 1.0],
+    [0.4 + 6 * beat, "E4", 1.0], [0.4 + 7 * beat, "A4", 1.0], [0.4 + 8 * beat, "A4", 0.5], [0.4 + 8.5 * beat, "B4", 0.5],
+    [0.4 + 9 * beat, "A4", 0.5], [0.4 + 9.5 * beat, "G4", 0.5], [0.4 + 10 * beat, "F#4", 1.0], [0.4 + 11 * beat, "D4", 1.0],
+    [0.4 + 12 * beat, "D4", 1.0], [0.4 + 13 * beat, "B4", 1.0], [0.4 + 14 * beat, "B4", 0.5], [0.4 + 14.5 * beat, "C5", 0.5],
+    [0.4 + 15 * beat, "B4", 0.5], [0.4 + 15.5 * beat, "A4", 0.5], [0.4 + 16 * beat, "G4", 1.0], [0.4 + 17 * beat, "E4", 1.0],
+    [0.4 + 18 * beat, "D4", 0.5], [0.4 + 18.5 * beat, "D4", 0.5], [0.4 + 19 * beat, "E4", 1.0],
+    [0.4 + 20 * beat, "A4", 1.0], [0.4 + 21 * beat, "F#4", 1.0], [0.4 + 22 * beat, "G4", 2.0],
+  ];
+  for (let idx = 0; idx < melody.length; idx++) {
+    const t0 = melody[idx][0], note = melody[idx][1], b_len = melody[idx][2];
+    const voice = _bell_voice(NOTE_MAP[note], Math.max(0.8, b_len * 0.9), 0.22);
+    const pan = idx % 2 === 0 ? -0.25 : 0.25;
+    _add_stereo(buf, t0, voice, pan);
+  }
+
+  const sparkle_notes = ["C5", "E5", "G5", "B5", "C6", "D6", "E6", "G6"];
+  for (let i = 0; i < sparkle_notes.length; i++) {
+    const voice = _bell_voice(NOTE_MAP[sparkle_notes[i]], 1.6, 0.16);
+    _add_stereo(buf, star_time + i * 0.055, voice, -0.6 + 1.2 * (i / Math.max(1, sparkle_notes.length - 1)));
+  }
+
+  const t_p2 = 12.6;
+  const phrase2 = [
+    [0.0, "G4", 1.0], [1 * beat, "C5", 1.0], [2 * beat, "C5", 1.0], [3 * beat, "C5", 1.0],
+    [4 * beat, "B4", 2.0], [6 * beat, "B4", 1.0], [7 * beat, "C5", 1.0],
+    [8 * beat, "B4", 1.0], [9 * beat, "A4", 1.0], [10 * beat, "G4", 2.0],
+    [12 * beat, "D5", 1.0], [13 * beat, "E5", 1.0], [14 * beat, "D5", 1.0], [15 * beat, "C5", 1.0],
+    [16 * beat, "G5", 1.2], [17 * beat, "E5", 1.5], [18.5 * beat, "C5", 2.5],
+  ];
+  for (let idx = 0; idx < phrase2.length; idx++) {
+    const dt_s = phrase2[idx][0], note = phrase2[idx][1], b_len = phrase2[idx][2];
+    const t_note = t_p2 + dt_s;
+    if (t_note < duration - 0.5) {
+      const voice = _bell_voice(NOTE_MAP[note], Math.max(0.9, b_len * 0.95), 0.23);
+      _add_stereo(buf, t_note, voice, idx % 2 === 0 ? 0.25 : -0.25);
+    }
+  }
+
+  const rng = makeRng(12);
+  const n_tick = Math.trunc(0.18 * AUDIO_SR);
+  const shimmer = new Float32Array(n_tick);
+  const noise = rng.normal(0.0, 1.0, n_tick);
+  const sin = Math.sin, exp = Math.exp;
+  const w_shimmer = 2.0 * Math.PI * 5800.0;
+  for (let i = 0; i < n_tick; i++) {
+    const t = i / AUDIO_SR;
+    shimmer[i] = noise[i] * sin(w_shimmer * t) * exp(-t * 24.0) * 0.035;
+  }
+  const tick_beats = Math.trunc(duration / (2 * beat));
+  for (let beat_i = 1; beat_i < tick_beats; beat_i++) {
+    _add_stereo(buf, beat_i * (2 * beat), shimmer, 0.35 * Math.sin(beat_i));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public entry point (Python generate_festive_audio 1093-1128, minus WAV I/O)
+// ---------------------------------------------------------------------------
+
+function synthesizeSoundtrack(duration, starTime, theme) {
+  if (duration === undefined) duration = 20.0;
+  if (starTime === undefined) starTime = 11.8;
+  if (theme === undefined) theme = "last_christmas";
+
+  const total_samples = Math.max(1, Math.trunc(duration * AUDIO_SR));
+  const buf = { l: new Float32Array(total_samples), r: new Float32Array(total_samples) };
+
+  if (theme === "traditional") {
+    _render_traditional(buf, duration, starTime);
+  } else if (theme === "last_christmas") {
+    _render_last_christmas(buf, duration, starTime);
+  } else {
+    throw new Error("Unknown audio theme: '" + theme + "'");
+  }
+
+  const wet = _apply_reverb(buf);
+  const fade_samples = Math.min(total_samples, Math.trunc(0.85 * AUDIO_SR));
+  if (fade_samples > 0) {
+    const span = fade_samples > 1 ? fade_samples - 1 : 1;
+    const base = total_samples - fade_samples;
+    for (let i = 0; i < fade_samples; i++) {
+      const f = Math.fround(fade_samples > 1 ? 1.0 - i / span : 1.0);
+      wet.l[base + i] *= f;
+      wet.r[base + i] *= f;
+    }
+  }
+
+  let peak = 0.0;
+  for (let i = 0; i < total_samples; i++) {
+    const al = wet.l[i] < 0 ? -wet.l[i] : wet.l[i];
+    const ar = wet.r[i] < 0 ? -wet.r[i] : wet.r[i];
+    if (al > peak) peak = al;
+    if (ar > peak) peak = ar;
+  }
+  if (peak > 0.0) {
+    const scale = 0.88 / Math.max(peak, 1.0);
+    for (let i = 0; i < total_samples; i++) {
+      wet.l[i] *= scale;
+      wet.r[i] *= scale;
+    }
+  }
+
+  const left = new Float32Array(total_samples);
+  const right = new Float32Array(total_samples);
+  const tanh = Math.tanh;
+  for (let i = 0; i < total_samples; i++) {
+    left[i] = tanh(wet.l[i]);
+    right[i] = tanh(wet.r[i]);
+  }
+  return { sampleRate: AUDIO_SR, left: left, right: right };
+}
+
+
+/* ===================== render.js ===================== */
+// render.js — canvas glyph-atlas rasteriser, two-scale additive bloom and HUD.
+// Port of christmas_tree.py lines 55-93 (BG_RGB + renderer constants) and
+// class Renderer (lines 677-779). Concatenated after scene.js / frame.js / audio.js.
+
+class Renderer {
+  constructor(canvas, opts) {
+    opts = opts || {};
+    const cw = opts.cw !== undefined ? opts.cw : CW;
+    const ch = opts.ch !== undefined ? opts.ch : CH;
+    const fontPx = opts.fontPx !== undefined ? opts.fontPx : FONT_PX;
+    const hudPx = opts.hudPx !== undefined ? opts.hudPx : 15;
+    const author = opts.author !== undefined ? opts.author : DEFAULT_AUTHOR;
+    const showHint = opts.showHint !== undefined ? opts.showHint : true;
+    const hint = opts.hint !== undefined ? opts.hint : HINT;
+
+    this.canvas = canvas;
+    this.cols = COLS;
+    this.rows = ROWS;
+    this.cw = cw;
+    this.ch = ch;
+    this.w = COLS * cw;
+    this.h = ROWS * ch;
+    this.fontPx = fontPx;
+    this.hudPx = hudPx;
+    this.author = author;
+    this.showHint = showHint;
+    this.hint = hint;
+
+    // pygame SysFont(MONO, n) equivalent; MONO lacks the spaced family names.
+    this._family = 'Consolas, Menlo, "DejaVu Sans Mono", Courier New, monospace';
+    // Approximate hud_font.get_height() for dot radius / hint baseline.
+    this._hudFontH = Math.max(1, Math.round(hudPx * 1.2));
+
+    const W = this.w;
+    const H = this.h;
+
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    this.ctx = ctx;
+
+    function makeCanvas(w, h) {
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, w);
+      c.height = Math.max(1, h);
+      return c;
+    }
+
+    // --- Persistent offscreen buffers (no per-frame allocation) ---
+    // Full-size glyph layer (3-channel data + alpha), reused every frame.
+    this.layerCanvas = makeCanvas(W, H);
+    this.layerCtx = this.layerCanvas.getContext('2d');
+    this.layerData = this.layerCtx.createImageData(W, H);
+    this.layerPx = this.layerData.data;
+
+    // Full-size "bright" layer: max(0, glyph - 35) for bloom.
+    this.brightCanvas = makeCanvas(W, H);
+    this.brightCtx = this.brightCanvas.getContext('2d');
+    this.brightData = this.brightCtx.createImageData(W, H);
+    this.brightPx = this.brightData.data;
+
+    // Bloom scales: w//2,h//2 and w//6,h//6 (cv2.resize targets).
+    this.halfW = Math.max(1, Math.floor(W / 2));
+    this.halfH = Math.max(1, Math.floor(H / 2));
+    this.halfCanvas = makeCanvas(this.halfW, this.halfH);
+    this.halfCtx = this.halfCanvas.getContext('2d');
+
+    this.sixthW = Math.max(1, Math.floor(W / 6));
+    this.sixthH = Math.max(1, Math.floor(H / 6));
+    this.sixthCanvas = makeCanvas(this.sixthW, this.sixthH);
+    this.sixthCtx = this.sixthCanvas.getContext('2d');
+
+    // --- 95-glyph atlas, ASCII 32..126, coverage = alpha channel ---
+    const cellPx = cw * ch;
+    this._cellPx = cellPx;
+    this.glyph = new Uint8Array(95 * cellPx);
+
+    const cell = makeCanvas(cw, ch);
+    const cellCtx = cell.getContext('2d', { willReadFrequently: true });
+    cellCtx.textAlign = 'center';
+    cellCtx.textBaseline = 'middle';
+    cellCtx.fillStyle = 'rgb(255,255,255)';
+    cellCtx.font = fontPx + 'px ' + this._family;
+
+    for (let code = 32; code < 127; code++) {
+      cellCtx.clearRect(0, 0, cw, ch);
+      cellCtx.fillText(String.fromCharCode(code), cw / 2, ch / 2);
+      const px = cellCtx.getImageData(0, 0, cw, ch).data;
+      const gbase = (code - 32) * cellPx;
+      for (let p = 0; p < cellPx; p++) this.glyph[gbase + p] = px[p * 4 + 3];
+    }
+  }
+
+  // Mirrors Renderer.render_surface(): sparse glyph composite, bloom, HUD.
+  render(char, col, t, info) {
+    const cols = this.cols;
+    const rows = this.rows;
+    const cw = this.cw;
+    const ch = this.ch;
+    const W = this.w;
+    const H = this.h;
+    const glyph = this.glyph;
+    const layer = this.layerPx;
+    const bright = this.brightPx;
+    const cellPx = this._cellPx;
+    const rowSpan = (W - cw) * 4;
+
+    layer.fill(0);
+    bright.fill(0);
+
+    // canvas[rr, cc] = clip(atlas[idx] * (col * 255), 0, 255)
+    for (let r = 0; r < rows; r++) {
+      const base = r * cols;
+      const py = r * ch;
+      for (let c = 0; c < cols; c++) {
+        const code = char[base + c];
+        if (code < 32) continue;
+        let gi = code - 32;
+        if (gi > 94) gi = 94;
+        const gbase = gi * cellPx;
+        const ci = (base + c) * 3;
+        const cr = col[ci];
+        const cg = col[ci + 1];
+        const cb = col[ci + 2];
+        let o = (py * W + c * cw) * 4;
+        for (let gy = 0; gy < ch; gy++) {
+          const g = gbase + gy * cw;
+          for (let gx = 0; gx < cw; gx++) {
+            const cov = glyph[g + gx];
+            if (cov !== 0) {
+              // cov/255 * col * 255 == cov * col; clip the product like np.clip.
+              let vr = cov * cr;
+              if (vr < 0) vr = 0; else if (vr > 255) vr = 255;
+              let vg = cov * cg;
+              if (vg < 0) vg = 0; else if (vg > 255) vg = 255;
+              let vb = cov * cb;
+              if (vb < 0) vb = 0; else if (vb > 255) vb = 255;
+              const ir = vr | 0;
+              const ig = vg | 0;
+              const ib = vb | 0;
+              layer[o] = ir;
+              layer[o + 1] = ig;
+              layer[o + 2] = ib;
+              layer[o + 3] = 255;
+              // cv2.subtract(img, (35,35,35,0)) saturates at 0.
+              bright[o] = ir > 35 ? ir - 35 : 0;
+              bright[o + 1] = ig > 35 ? ig - 35 : 0;
+              bright[o + 2] = ib > 35 ? ib - 35 : 0;
+              bright[o + 3] = 255;
+            }
+            o += 4;
+          }
+          o += rowSpan;
+        }
+      }
+    }
+
+    this.layerCtx.putImageData(this.layerData, 0, 0);
+    this.brightCtx.putImageData(this.brightData, 0, 0);
+
+    const ctx = this.ctx;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.filter = 'none';
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // cv2.add(img, BG_RGB)
+    ctx.fillStyle = 'rgb(' + BG_RGB[0] + ',' + BG_RGB[1] + ',' + BG_RGB[2] + ')';
+    ctx.fillRect(0, 0, W, H);
+
+    // img added additively
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(this.layerCanvas, 0, 0);
+
+    // (a) resize w//2,h//2 -> GaussianBlur sigma 2.4 -> resize up, weight 0.50
+    const hc = this.halfCtx;
+    hc.globalCompositeOperation = 'source-over';
+    hc.globalAlpha = 1;
+    hc.imageSmoothingEnabled = true;
+    hc.imageSmoothingQuality = 'high';
+    hc.filter = 'none';
+    hc.fillStyle = '#000';
+    hc.fillRect(0, 0, this.halfW, this.halfH);
+    hc.filter = 'blur(2.4px)';
+    hc.drawImage(this.brightCanvas, 0, 0, this.halfW, this.halfH);
+    hc.filter = 'none';
+
+    ctx.globalAlpha = 0.50;
+    ctx.drawImage(this.halfCanvas, 0, 0, W, H);
+
+    // (b) resize w//6,h//6 -> GaussianBlur sigma 2.6 -> resize up, weight 0.45
+    const sc = this.sixthCtx;
+    sc.globalCompositeOperation = 'source-over';
+    sc.globalAlpha = 1;
+    sc.imageSmoothingEnabled = true;
+    sc.imageSmoothingQuality = 'high';
+    sc.filter = 'none';
+    sc.fillStyle = '#000';
+    sc.fillRect(0, 0, this.sixthW, this.sixthH);
+    sc.filter = 'blur(2.6px)';
+    sc.drawImage(this.brightCanvas, 0, 0, this.sixthW, this.sixthH);
+    sc.filter = 'none';
+
+    ctx.globalAlpha = 0.45;
+    ctx.drawImage(this.sixthCanvas, 0, 0, W, H);
+
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+
+    this._drawHud(t, info);
+  }
+
+  // Mirrors Renderer._draw_hud().
+  _drawHud(t, info) {
+    const ctx = this.ctx;
+    const W = this.w;
+    const H = this.h;
+    const padX = Math.max(16, Math.trunc(this.cw * 2.0));
+    const padY = Math.max(14, Math.trunc(this.ch * 1.1));
+    const fontH = this._hudFontH;
+    const lineH = Math.max(this.hudPx, Math.trunc(this.hudPx * 1.32));
+
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.filter = 'none';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.font = this.hudPx + 'px ' + this._family;
+
+    const rot = info && info.rotation_deg !== undefined ? info.rotation_deg : 0;
+    const lights = info && info.lights !== undefined ? info.lights : 0;
+    const letters = info && info.letters !== undefined ? info.letters : 0;
+
+    // Top-right timer badge: f"t {t:05.2f}s"
+    let tStr = t.toFixed(2);
+    while (tStr.length < 5) tStr = '0' + tStr;
+    const tLbl = 't ' + tStr + 's';
+    const tW = ctx.measureText(tLbl).width;
+    const tx = W - padX - tW;
+    const ty = padY;
+    const dotR = Math.max(3, Math.floor(fontH / 5));
+    const dotDx = Math.max(13, Math.trunc(this.hudPx * 0.85));
+    ctx.fillStyle = 'rgb(' + ACCENT[0] + ',' + ACCENT[1] + ',' + ACCENT[2] + ')';
+    ctx.beginPath();
+    ctx.arc(tx - dotDx, ty + Math.floor(fontH / 2) + 1, dotR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillText(tLbl, tx, ty);
+
+    // Bottom-left signature & telemetry
+    const by = H - padY - lineH * 3;
+    ctx.fillStyle = 'rgb(' + SIGN[0] + ',' + SIGN[1] + ',' + SIGN[2] + ')';
+    ctx.fillText(this.author, padX, by);
+
+    let rStr = rot.toFixed(2);
+    while (rStr.length < 6) rStr = '0' + rStr;
+    let lStr = String(Math.trunc(lights));
+    while (lStr.length < 3) lStr = ' ' + lStr;
+    ctx.fillStyle = 'rgb(' + DIM[0] + ',' + DIM[1] + ',' + DIM[2] + ')';
+    ctx.fillText('rotation ' + rStr + '°     lights ' + lStr, padX, by + lineH);
+    ctx.fillText('letters ' + this._commas(letters), padX, by + lineH * 2);
+
+    if (this.showHint) {
+      ctx.fillStyle = 'rgb(68,76,92)';
+      const hW = ctx.measureText(this.hint).width;
+      ctx.fillText(this.hint, W - padX - hW, H - padY - fontH);
+    }
+  }
+
+  // Python f"{n:,}" for non-negative integers.
+  _commas(n) {
+    const s = String(Math.trunc(n));
+    let out = '';
+    let count = 0;
+    for (let i = s.length - 1; i >= 0; i--) {
+      out = s.charAt(i) + out;
+      count++;
+      if (count % 3 === 0 && i > 0) out = ',' + out;
+    }
+    return out;
+  }
+}
+
+
+/* ===================== page shell ===================== */
+(function () {
+  var params = new URLSearchParams(location.search);
+  var theme = params.get("theme") === "traditional" ? "traditional" : "last_christmas";
+  var THEME_NAMES = {
+    last_christmas: "Last Christmas",
+    traditional: "We Wish You a Merry Christmas"
+  };
+
+  var startT = parseFloat(params.get("t"));
+  if (!isFinite(startT)) startT = 0;
+  startT = Math.max(0, Math.min(DURATION, startT));
+
+  var canvas = document.getElementById("tree");
+  var overlay = document.getElementById("overlay");
+  var btnSound = document.getElementById("btnSound");
+  var btnMute = document.getElementById("btnMute");
+  var loadingEl = document.getElementById("loading");
+  var themeLabel = document.getElementById("themeLabel");
+  var toastEl = document.getElementById("toast");
+
+  themeLabel.textContent = THEME_NAMES[theme];
+
+  var scene = build();
+  var bg = new Background(COLS, ROWS);
+  var renderer = new Renderer(canvas, {
+    cw: CW,
+    ch: CH,
+    fontPx: FONT_PX,
+    hudPx: 15,
+    author: DEFAULT_AUTHOR,
+    showHint: true
+  });
+
+  var t = startT;
+  var running = false;
+  var paused = false;
+  var firstStart = true;
+  var lastNow = 0;
+  var acc = 0;
+  var shotIdx = 1;
+  var audio = null;        // { ctx, buffer, source }
+  var audioBusy = false;
+  var audioDirty = false;
+  var toastTimer = 0;
+
+  // ------------------------------------------------------------------ render
+  function draw() {
+    var frame = stepFrame(scene, bg, t, COLS, ROWS, CW / CH, DEFAULT_MESSAGE);
+    renderer.render(frame.char, frame.col, t, frame.info);
+  }
+
+  // ------------------------------------------------------------------ toast
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      toastEl.classList.remove("show");
+    }, 2200);
+  }
+
+  function setLoading(on) {
+    loadingEl.classList.toggle("hidden", !on);
+    document.getElementById("metaSep").classList.toggle("hidden", !on);
+  }
+
+  function nextFrame() {
+    return new Promise(function (resolve) { setTimeout(resolve, 40); });
+  }
+
+  // ------------------------------------------------------------------ audio
+  function ensureCtx() {
+    if (!audio) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) throw new Error("Web Audio API is not available");
+      audio = { ctx: new AC(), buffer: null, source: null };
+      // ctx is created inside the user gesture; nudge it awake right away.
+      if (audio.ctx.state === "suspended") audio.ctx.resume();
+    }
+    return audio;
+  }
+
+  function synthesizeBuffer(a) {
+    var data = synthesizeSoundtrack(DURATION, T_STAR, theme);
+    var buf = a.ctx.createBuffer(2, data.left.length, data.sampleRate);
+    buf.getChannelData(0).set(data.left);
+    buf.getChannelData(1).set(data.right);
+    a.buffer = buf;
+  }
+
+  function stopSource() {
+    if (audio && audio.source) {
+      try { audio.source.stop(); } catch (e) { /* already stopped */ }
+      audio.source = null;
+    }
+  }
+
+  function playAudioAt(pos) {
+    if (!audio || !audio.buffer) return;
+    var a = audio;
+    stopSource();
+    var src = a.ctx.createBufferSource();
+    src.buffer = a.buffer;
+    src.loop = true;
+    src.connect(a.ctx.destination);
+    var off = pos % DURATION;
+    if (off < 0) off += DURATION;
+    src.start(0, off);
+    a.source = src;
+  }
+
+  function resyncAudio() {
+    if (!audio || !audio.source) return;
+    if (paused) { audioDirty = true; return; }
+    playAudioAt(t);
+  }
+
+  // ------------------------------------------------------------------ state
+  function seek(newT) {
+    t = Math.max(0, Math.min(DURATION, newT));
+    if (audio && running) {
+      if (paused) audioDirty = true;
+      else playAudioAt(t);
+    }
+    draw();
+  }
+
+  function togglePause() {
+    if (!running) return;
+    paused = !paused;
+    if (!audio) return;
+    if (paused) {
+      audio.ctx.suspend();
+    } else {
+      audio.ctx.resume();
+      if (audioDirty) {
+        audioDirty = false;
+        playAudioAt(t);
+      }
+    }
+  }
+
+  async function start(withSound) {
+    if (running || audioBusy) return;
+
+    if (withSound) {
+      try {
+        ensureCtx();
+      } catch (e) {
+        console.error(e);
+        toast("Trình duyệt không hỗ trợ Web Audio — chạy không âm thanh.");
+        withSound = false;
+      }
+    }
+
+    if (withSound) {
+      audioBusy = true;
+      setLoading(true);
+      btnSound.disabled = true;
+      btnSound.textContent = "Đang tổng hợp nhạc…";
+      try {
+        await nextFrame();           // let the loading state paint
+        synthesizeBuffer(audio);
+        await audio.ctx.resume();
+      } catch (e) {
+        console.error(e);
+        toast("Không tổng hợp được nhạc — chạy không âm thanh.");
+        withSound = false;
+      }
+      audioBusy = false;
+      setLoading(false);
+      btnSound.disabled = false;
+      btnSound.textContent = "▶ Bắt đầu với nhạc";
+    }
+
+    t = firstStart ? startT : 0;
+    firstStart = false;
+    running = true;
+    paused = false;
+    acc = 0;
+    audioDirty = false;
+    overlay.classList.add("hidden");
+    lastNow = performance.now();
+    draw();
+
+    if (withSound && audio && audio.buffer) {
+      audio.ctx.resume();
+      playAudioAt(t);
+    } else {
+      stopSource();
+    }
+  }
+
+  function stopToMenu() {
+    running = false;
+    paused = false;
+    stopSource();
+    overlay.classList.remove("hidden");
+  }
+
+  // ------------------------------------------------------------------ actions
+  function screenshot() {
+    canvas.toBlob(function (blob) {
+      if (!blob) return;
+      var name = "screenshot_" + String(shotIdx).padStart(2, "0") + ".png";
+      shotIdx += 1;
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+      toast("Đã lưu " + name);
+    }, "image/png");
+  }
+
+  async function cycleTheme() {
+    if (audioBusy) return;
+    theme = theme === "last_christmas" ? "traditional" : "last_christmas";
+    themeLabel.textContent = THEME_NAMES[theme];
+
+    if (!audio) {
+      toast("Nhạc: " + THEME_NAMES[theme]);
+      return;
+    }
+
+    audioBusy = true;
+    toast("Đang tổng hợp: " + THEME_NAMES[theme] + "…");
+    try {
+      await nextFrame();
+      synthesizeBuffer(audio);
+      if (running && !paused) playAudioAt(t);
+      else audioDirty = true;
+      toast("Nhạc: " + THEME_NAMES[theme]);
+    } catch (e) {
+      console.error(e);
+      toast("Không tổng hợp được nhạc.");
+    }
+    audioBusy = false;
+  }
+
+  // ------------------------------------------------------------------ loop
+  function loop(now) {
+    requestAnimationFrame(loop);
+    if (!running) {
+      lastNow = now;
+      return;
+    }
+    var dt = (now - lastNow) / 1000;
+    lastNow = now;
+    if (paused) {
+      acc = 0;
+      return;
+    }
+    if (!(dt > 0)) return;
+    if (dt > 0.1) dt = 0.1;
+    acc += dt;
+    if (acc < 1 / 60) return;
+    t += acc;
+    acc = 0;
+    if (t > DURATION) {
+      t = t % DURATION;
+      resyncAudio();
+    }
+    draw();
+  }
+
+  // ------------------------------------------------------------------ input
+  document.addEventListener("keydown", function (e) {
+    if (e.code === "Space") {
+      e.preventDefault();
+      if (!running) start(true);
+      else togglePause();
+      return;
+    }
+    if (!running) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        start(true);
+      }
+      return;
+    }
+    switch (e.key) {
+      case "r":
+      case "R":
+        seek(0);
+        break;
+      case "ArrowLeft":
+        seek(t - 1);
+        break;
+      case "ArrowRight":
+        seek(t + 1);
+        break;
+      case "s":
+      case "S":
+        screenshot();
+        break;
+      case "t":
+      case "T":
+        cycleTheme();
+        break;
+      case "Escape":
+        stopToMenu();
+        break;
+    }
+  });
+
+  btnSound.addEventListener("click", function () { start(true); });
+  btnMute.addEventListener("click", function () { start(false); });
+
+  document.addEventListener("visibilitychange", function () {
+    if (!audio || !running || paused) return;
+    if (document.hidden) audio.ctx.suspend();
+    else audio.ctx.resume();
+  });
+
+  // ------------------------------------------------------------------ boot
+  var auto = params.has("start") || params.has("autostart");
+  var freeze = params.has("freeze");
+
+  if (auto) {
+    firstStart = false;
+    running = true;
+    paused = !!freeze;
+    overlay.classList.add("hidden");
+    draw();
+    lastNow = performance.now();
+  } else {
+    // Landing preview: a fully decorated frame behind the blurred overlay.
+    var savedT = t;
+    t = 12.0;
+    draw();
+    t = savedT;
+  }
+
+  requestAnimationFrame(loop);
+
+  // Tiny debug handle (harmless in production).
+  window.christmasTree = {
+    seek: seek,
+    pause: togglePause,
+    theme: function () { return theme; },
+    get time() { return t; },
+    get running() { return running; }
+  };
+})();
+</script>
+</body>
+</html>
